@@ -16,7 +16,7 @@ class RigidBody
 {
     public:
 
-    double mass;    // Center of Mass
+    double mass;
 
     Vector3d v;
     Vector3d omega;
@@ -45,7 +45,10 @@ class RigidBody
     RigidBody()
     {
         x << 0,0,0;
-        q = Eigen::Quaterniond{Eigen::AngleAxisd{0, Eigen::Vector3d{0, 0, 1}}};
+        v << 0,0,0;
+        omega << 0,0,0;
+
+        q = Eigen::Quaterniond{Eigen::AngleAxisd{0, Eigen::Vector3d{1, 1, 1}}};
         R = q.normalized().toRotationMatrix();
 
         mass = 0;
@@ -64,6 +67,13 @@ class RigidBody
         cout << "Called Destructor" << endl;
     }
 
+
+    /* TODO: Setter */
+    void setV(Vector3d velocity);
+    void setOmega(Vector3d angular_velocity);
+
+
+    /* Model Example: Cube*/
     void modelCube()
     {
         particleNum = 8;
@@ -97,8 +107,14 @@ class RigidBody
         vertices[7].r0 << -1,1,-1;
     }
 
+
+    /*  */
     void initiateRB()
     {
+
+
+        v << 0,0,10;
+        omega << 0.05, 0.02, 0.01;
         
         for(int i = 0; i < particleNum; i++)
         {
@@ -116,17 +132,30 @@ class RigidBody
         L = I * omega;
     }
 
-    void Update(double h)
+    void update(double h)
     {
         static int frame = 0;
-
         frame++;
+
         v = P / mass;
         x += v * h;
         
-        //TODO: Adding two quaternion as two 4x1 vectors is not supported by
-        //the EIgen API
         // Update q
+        Quaterniond omega_q;
+        omega_q.w() = 0;
+        omega_q.vec() = omega;
+        omega_q.normalize();
+        Quaterniond qdot_2 = omega_q * q;
+        /* 
+            2nd time!!!
+            Wrote 1/2, but well, 1/2 = 0.
+            Should be 1.0 /2 or (double)1/2
+        */
+        q.w() = q.w() + h * 0.5 * (qdot_2.w()); 
+        q.x() = q.x() + h * 0.5 * (qdot_2.x());
+        q.y() = q.y() + h * 0.5 * (qdot_2.y());
+        q.z() = q.z() + h * 0.5 * (qdot_2.z());
+        q.normalize();
 
         R = q.normalized().toRotationMatrix();
         P += force * h;
@@ -154,14 +183,23 @@ class RigidBody
         cout << "Allocated " << particleNum << " particlaes" << endl;
     }
 
-    void printForce()
+    void printStatus()
     {
+        std::cout << "x=" << x << std::endl;
+        std::cout << "v=" << v << std::endl;
+        std::cout << "q.w() = " << q.w() << ", q.vec() = " << std::endl << q.vec() << std::endl;
+        std::cout << "R=" << std::endl << R << std::endl;
+        
+        std::cout << "I=" << std::endl << I << std::endl;
+        std::cout << "L=" << L << std::endl;
         std::cout << "Force=" << force << std::endl;
+        std::cout << "torque=" << std::endl << torque << std::endl;
+        std::cout << "Ibody=" << std::endl << Ibody << std::endl;
     }
 
-    void printIbody()
+    void printQuaternion()
     {
-        std::cout << "Ibody=" << std::endl << Ibody << std::endl;
+          std::cout << "q.w() = " << q.w() << ", q.vec() = " << std::endl << q.vec() << std::endl;
     }
 
     void printRotationMatrix()
@@ -179,15 +217,13 @@ int main(int argc, char const *argv[])
     RigidBody rb;
     rb.modelCube();
     rb.initiateRB();
-    // rb.printIbody();
-    // rb.printForce();
+    rb.printStatus();
     for(int i =0; i< 10; i++)
     {
-        rb.Update(0.01);
+        rb.update(0.01);
         rb.printRotationMatrix();
     }
-    // rb.printRotationMatrix();
-    std::cout << "main!" << endl;
+    std::cout << "Run the simulation and display!" << endl;
 
     return 0;
 }
