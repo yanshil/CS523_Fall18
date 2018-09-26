@@ -1,7 +1,7 @@
-#!/usr/bin/python3
-
 ## CS523.HW1.problem1
 ## Yanshi Luo
+
+## Code from jupyter notebook, plots are displayed in the pdf
 
 ## Backward Euler
 def backwardEuler(u,v,h):
