@@ -1,6 +1,8 @@
 #include <Eigen/Geometry>
 #include <iostream>
 
+// g++ main.cpp -o rotate
+
 using namespace std;
 using namespace Eigen;
 
@@ -38,8 +40,6 @@ class RigidBody
 
     Particle *vertices;
     int particleNum;
-
-    //Particles vertices[8];
 
     // Constructor
     RigidBody()
