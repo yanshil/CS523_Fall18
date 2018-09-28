@@ -2,7 +2,7 @@
 #include <iostream>
 #include <GL/glut.h>
 
-// g++ main.cpp -lglut -lGLU -lGL
+// g++ main.cpp -lglut -lGLU -lGL -o rotate
 // g++ main.cpp -lglut -lGLU -lGL -I /home/yanshi/Libraries/eigen/ -std=gnu++11
 
 
@@ -301,8 +301,8 @@ void keyboard(unsigned char key, int x, int y)
 
 
 // Light Control
-GLfloat light_diffuse[] = {1.0, 0.8, 0.8, 1.0};  /* Red diffuse light. */
-GLfloat light_position[] = {1.0, 1.0, 1.0, 0.0}; /* Infinite light location. */
+GLfloat light_diffuse[] = {1.0, 0.3, 0.5, 1.0};  /* Red diffuse light. */
+GLfloat light_position[] = {10.0, 10.0, 10.0, 10.0}; /* Infinite light location. */
 
 void init(void)
 {
