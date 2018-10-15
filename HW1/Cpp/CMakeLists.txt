@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.3)
+cmake_minimum_required(VERSION 2.6)
 project(foo CXX)
 
 ############################################################
@@ -26,19 +26,18 @@ target_link_libraries(${PROJECT_NAME} RigidBody)
 
 ### Eigen:
 
-find_package (Eigen3 3.3 NO_MODULE)
-if (TARGET Eigen3::Eigen)
+#find_package (Eigen3 3.3 NO_MODULE) 
+#if (TARGET Eigen3::Eigen)
     # Use the imported target
     include_directories(include)
-    include_directories(${CMAKE_SOURCE_DIR})
-endif (TARGET Eigen3::Eigen)
+#    include_directories(${CMAKE_SOURCE_DIR})
+# endif (TARGET Eigen3::Eigen)
 
 
 ## Build-in Libraries
-find_package(OCMakeFiles/foo.dir/allpenGL)
-find_package(GCMakeFiles/foo.dir/allLUT)
-CMakeFiles/foo.dir/all
-include_directCMakeFiles/foo.dir/allories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
+find_package(OpenGL)
+find_package(GLUT)
+include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
 
 target_link_libraries(
     ${PROJECT_NAME}
