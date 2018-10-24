@@ -1,6 +1,7 @@
 #define EPSILON 0.0001
 #define ELLIPSE_A 4
 #define ELLIPSE_B 2
+#define ELLIPSE_C 3
 
 #include <nova/Tools/Grids/Grid.h>
 #include <nova/Tools/Parsing/Parse_Args.h>
@@ -21,7 +22,7 @@ enum
 typedef double T;
 using T_INDEX = Vector<int, d>;
 
-typedef Vector<double, 2> Vector2d;
+// typedef Vector<double, 2> Vector2d;
 
 /* Global variabble for shape selection */
 int shape = 0;
@@ -31,10 +32,10 @@ int shape = 0;
 class CELL
 {
   public:
-    Vector2d bottemleft;
-    Vector2d bottemright;
-    Vector2d topleft;
-    Vector2d topright;
+    Vector<double, d> c000;
+    Vector<double, d> c010;
+    Vector<double, d> c100;
+    Vector<double, d> c111;
 
     double dx;
     double dy;
@@ -71,20 +72,42 @@ void menu_GetShape()
     }
 }
 
-/* input: point in space; origin: center of box; width: "radius" of the box */
-double sdf_box(Vector2d input, Vector2d origin, Vector2d width)
+double sdf_circle(Vector<double, d> inputn)
 {
-    //   vec3 d = abs(p) - b;
-    //   return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
+    double tmp = 0;
 
-    Vector2d dTmp;
-    dTmp = (input - origin).Abs() - width;
+    for (int i = 0; i < d; i++)
+    {
+        tmp += std::pow(input(i), 2.0)
+    }
+
+    return std::sqrt(tmp) - 1;
+    // 2d: phi = std::sqrt(std::pow(input(0)-origin(0), 2.0) + std::pow(input(1)-origin(0), 2.0)) - 1;
+}
+
+double sdf_ellipse(Vector<double, d> input, Vector<double, d> ellipse_para)
+{
+    double tmp = 0;
+
+    for (int i = 0; i < d; i++)
+    {
+        tmp += std::pow(input(i), 2.0) / ellipse_para(i);
+    }
+    return std::sqrt(tmp) - 1;
+    // 2d: phi = std::sqrt(std::pow(input(0), 2.0) / ELLIPSE_A + std::pow(input(1), 2.0) / ELLIPSE_B) - 1;
+}
+
+/* input: point in space; origin: center of box; width: "radius" of the box */
+double sdf_box(Vector<double, d> input, Vector<double, d> width)
+{
+    Vector<double, d> dTmp;
+    dTmp = (input).Abs() - width;
 
     // If in the box, this will be the SDF.
     double dTmpMax = dTmp.Max();
 
     double dTmpLength = 0;
-    for (int i = 0; i < dTmp.Size(); i++)
+    for (int i = 0; i < d; i++)
     {
         if (dTmp(i) < 0)
             dTmp(i) = 0;
@@ -99,23 +122,32 @@ double sdf_box(Vector2d input, Vector2d origin, Vector2d width)
 /* Given the implicit function, 
 get value of phi and stored themgrids's nodes */
 
-double getPhi_analytic(Vector2d input)
+double getPhi_analytic(Vector<double, d> input)
 {
     double phi = 0;
 
     /* Circle */
     if (shape == 1)
-        phi = std::sqrt(std::pow(input(0), 2.0) + std::pow(input(1), 2.0)) - 1;
+        phi = sdf_circle(input);
     /* Ellipse */
     // Ref: http://impact.byu.edu/Image%20Processing%20Seminar/W02_SignedDistanceFunction.pdf
     if (shape == 2)
-        phi = std::sqrt(std::pow(input(0), 2.0) / ELLIPSE_A + std::pow(input(1), 2.0) / ELLIPSE_B) - 1;
+    {
+        Vector<double, d> ellipse_para;
+
+        ellipse_para(0) = ELLIPSE_A;
+        ellipse_para(1) = ELLIPSE_B;
+        if(d==3) ellipse_para(2) = ELLIPSE_C;
+
+        phi = sdf_ellipse(input, ellipse_para);
+    }
+    // phi = std::sqrt(std::pow(input(0), 2.0) / ELLIPSE_A + std::pow(input(1), 2.0) / ELLIPSE_B) - 1;
     /* Retangular */
     // Ref: https://stackoverflow.com/questions/35326366/glsl-cube-signed-distance-field-implementation-explanation
     // Ref: https://www.alanzucconi.com/2016/07/01/signed-distance-functions/#part3
     if (shape == 3)
     {
-        phi = sdf_box(input, Vector2d({0.0, 0.0}), Vector2d({1.0, 1.0}));
+        phi = sdf_box(input, Vector<double, d>({0.0, 0.0}), Vector<double, d>({1.0, 1.0}));
     }
 
     // std::cout<< "phi("  << input << ") = "<< phi <<std::endl;
@@ -125,35 +157,27 @@ double getPhi_analytic(Vector2d input)
 
 /* Given a point in space, return its stored cell */
 
-CELL getCell(Vector2d point, Grid<T, d> grid)
+CELL getCell(Vector<double, d> point, Grid<T, d> grid)
 {
     CELL cell;
 
-    cell.dx = grid.dX(0);
-    cell.dy = grid.dX(1);
+    cell.c000(0) = floor((point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
+    cell.c000(1) = floor((point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
 
-    cell.bottemleft(0) = floor((point(0) - grid.domain.min_corner(0)) / cell.dx) * cell.dx;
-    cell.bottemleft(1) = floor((point(1) - grid.domain.min_corner(1)) / cell.dy) * cell.dy;
+    cell.c010(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
+    cell.c010(1) = floor((point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
 
-    cell.bottemright(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / cell.dx) * cell.dx;
-    cell.bottemright(1) = floor((point(1) - grid.domain.min_corner(1)) / cell.dy) * cell.dy;
+    cell.c100(0) = floor((point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
+    cell.c100(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
 
-    cell.topleft(0) = floor((point(0) - grid.domain.min_corner(0)) / cell.dx) * cell.dx;
-    cell.topleft(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / cell.dy) * cell.dy;
-
-    cell.topright(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / cell.dx) * cell.dx;
-    cell.topright(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / cell.dy) * cell.dy;
-
-    // std::cout<<"cell.bottomleft = ("<<cell.bottemleft<<")"<<std::endl;
-    // std::cout<<"cell.bottemright = ("<<cell.bottemright<<")"<<std::endl;
-    // std::cout<<"cell.topleft = ("<<cell.topleft<<")"<<std::endl;
-    // std::cout<<"cell.topright = ("<<cell.topright<<")"<<std::endl;
+    cell.c111(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
+    cell.c111(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
 
     return cell;
 }
 
 /* Given a point in space, return its phi value */
-double getPhi(Vector2d point, Grid<T, d> grid)
+double getPhi(Vector<double, d> point, Grid<T, d> grid)
 {
     /* Main Logic */
     double phi_p, phi00, phi01, phi10, phi11, phi_x0, phi_x1;
@@ -163,8 +187,9 @@ double getPhi(Vector2d point, Grid<T, d> grid)
     cell = getCell(point, grid);
 
     /* residual */
-    a = (point(0) - cell.bottemleft(0)) / cell.dx;
-    b = (point(1) - cell.bottemleft(1)) / cell.dy;
+    a = (point(0) - cell.c000(0)) / grid.dX(0);
+    b = (point(1) - cell.c000(1)) / grid.dX(1);
+    //TODO 3D
 
     /* If the point is on the cell vertex */
     if ((std::abs(a) < EPSILON) && (std::abs(b) < EPSILON))
@@ -175,10 +200,12 @@ double getPhi(Vector2d point, Grid<T, d> grid)
     }
 
     /* Get phi's analytic result for points on cell boundaries */
-    phi00 = getPhi_analytic(cell.bottemleft);
-    phi01 = getPhi_analytic(cell.bottemright);
-    phi10 = getPhi_analytic(cell.topleft);
-    phi11 = getPhi_analytic(cell.topright);
+    phi00 = getPhi_analytic(cell.c000);
+    phi01 = getPhi_analytic(cell.c010);
+    phi10 = getPhi_analytic(cell.c100);
+    phi11 = getPhi_analytic(cell.c111);
+
+    //TODO: 3D
 
     /* Interpolate temparory value */
     phi_x0 = a * phi01 + (1 - a) * phi00;
@@ -191,22 +218,23 @@ double getPhi(Vector2d point, Grid<T, d> grid)
 }
 
 /* Get nabla phi */
-Vector2d getNablaPhi(Vector2d point, Grid<T, d> grid)
+Vector<double, d> getNablaPhi(Vector<double, d> point, Grid<T, d> grid)
 {
-    Vector2d np;
+    Vector<double, d> np;
     double phi00, phi01, phi10;
 
     CELL cell = getCell(point, grid);
-    phi00 = getPhi_analytic(cell.bottemleft);
-    phi01 = getPhi_analytic(cell.bottemright);
-    phi10 = getPhi_analytic(cell.topleft);
+    phi00 = getPhi_analytic(cell.c000);
+    phi01 = getPhi_analytic(cell.c010);
+    phi10 = getPhi_analytic(cell.c100);
 
-    np(0) = (phi01 - phi00) / cell.dx;
-    np(1) = (phi10 - phi00) / cell.dy;
+    np(0) = (phi01 - phi00) / grid.dX(0);
+    np(1) = (phi10 - phi00) / grid.dX(1);
+    // TODO: 3D
 
-    // std::cout << "phi00(" << cell.bottemleft << ") = " << phi00 << std::endl;
-    // std::cout << "phi01(" << cell.bottemright << ") = " << phi01 << std::endl;
-    // std::cout << "phi10(" << cell.topleft << ") = " << phi10 << std::endl;
+    // std::cout << "phi00(" << cell.c000 << ") = " << phi00 << std::endl;
+    // std::cout << "phi01(" << cell.c010 << ") = " << phi01 << std::endl;
+    // std::cout << "phi10(" << cell.c100 << ") = " << phi10 << std::endl;
 
     // std::cout << "(phi01 - phi00)" << (phi01 - phi00) << std::endl;
     // std::cout << "(phi10 - phi00)" << (phi10 - phi00) << std::endl;
@@ -215,10 +243,10 @@ Vector2d getNablaPhi(Vector2d point, Grid<T, d> grid)
     return np;
 }
 
-void movePointToBoundary(Vector2d point, Grid<T, d> grid)
+void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
 {
     double currentDistance = DBL_MAX; // Max Double from float.h
-    Vector2d nabla_phi;
+    Vector<double, d> nabla_phi;
     int iteration = 1;
 
     /* Display Out/In/On information before iteration */
@@ -248,6 +276,7 @@ void movePointToBoundary(Vector2d point, Grid<T, d> grid)
 
         point(0) = point(0) - currentDistance * nabla_phi(0);
         point(1) = point(1) - currentDistance * nabla_phi(1);
+        //TODO: 3D
         iteration++;
 
         if (iteration >= 50)
@@ -297,7 +326,7 @@ int main(int argc, char **argv)
 
     std::cout << "Please enter a coordinate to evaluate: " << std::endl;
 
-    Vector2d point;
+    Vector<double, d> point;
     for (int i = 0; i < d; i++)
         std::cin >> point(i);
 
