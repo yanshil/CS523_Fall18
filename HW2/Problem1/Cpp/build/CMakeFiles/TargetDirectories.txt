@@ -1,4 +1,0 @@
-/home/yanshi/Workspace/CS523/HW2/Problem1/build/CMakeFiles/edit_cache.dir
-/home/yanshi/Workspace/CS523/HW2/Problem1/build/CMakeFiles/rebuild_cache.dir
-/home/yanshi/Workspace/CS523/HW2/Problem1/build/CMakeFiles/_nova_tools.dir
-/home/yanshi/Workspace/CS523/HW2/Problem1/build/CMakeFiles/foo.dir
