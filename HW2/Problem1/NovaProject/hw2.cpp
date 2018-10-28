@@ -1,4 +1,4 @@
-#define EPSILON 0.0001
+#define EPSILON 0.005
 #define ELLIPSE_A 4
 #define ELLIPSE_B 2
 #define ELLIPSE_C 3
@@ -17,10 +17,11 @@ using namespace Nova;
 
 enum
 {
-    d = 2
+    d = 3
 };
 typedef double T;
 using T_INDEX = Vector<int, d>;
+int two_power_d = (int)std::pow(2.0, d);
 
 // typedef Vector<double, 2> Vector2d;
 
@@ -28,17 +29,32 @@ using T_INDEX = Vector<int, d>;
 int shape = 0;
 
 /*-------------------------------------------*/
-
 class CELL
 {
   public:
     Vector<double, d> c000;
-    Vector<double, d> c010;
-    Vector<double, d> c100;
+    Vector<double, d> c001; // z
+    Vector<double, d> c010; // y
+    Vector<double, d> c011;
+    Vector<double, d> c100; // x
+    Vector<double, d> c101;
+    Vector<double, d> c110;
     Vector<double, d> c111;
 
-    double dx;
-    double dy;
+    CELL()
+    {
+        c000 = Vector<double, d>(0.0);
+        c001 = Vector<double, d>(0.0);
+        c010 = Vector<double, d>(0.0);
+        c011 = Vector<double, d>(0.0);
+        c100 = Vector<double, d>(0.0);
+        c101 = Vector<double, d>(0.0);
+        c110 = Vector<double, d>(0.0);
+        c111 = Vector<double, d>(0.0);
+    }
+    // using point = Vector<double, d>;
+
+    // Vector<double, d> cellVertex[8];
 };
 
 void menu_GetShape()
@@ -46,9 +62,10 @@ void menu_GetShape()
     while (shape == 0)
     {
         std::cout << "Please select a shape:" << std::endl;
-        std::cout << "1. Circle [default with origin (0,0) ]" << std::endl;
-        std::cout << "2. Ellipse [default with origin (0,0) ]" << std::endl;
-        std::cout << "3. Rectangular [default with origin (0,0) ]" << std::endl;
+        std::cout << "Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3})." << std::endl;
+        std::cout << "1. Circle / Shpere [default with origin (0,0) ]" << std::endl;
+        std::cout << "2. Ellipse / Ellipsoid [default with origin (0,0) ]" << std::endl;
+        std::cout << "3. Square / Cubic [default with origin (0,0) ]" << std::endl;
 
         std::cin >> shape;
 
@@ -72,13 +89,13 @@ void menu_GetShape()
     }
 }
 
-double sdf_circle(Vector<double, d> inputn)
+double sdf_circle(Vector<double, d> input)
 {
     double tmp = 0;
 
     for (int i = 0; i < d; i++)
     {
-        tmp += std::pow(input(i), 2.0)
+        tmp += std::pow(input(i), 2.0);
     }
 
     return std::sqrt(tmp) - 1;
@@ -137,7 +154,8 @@ double getPhi_analytic(Vector<double, d> input)
 
         ellipse_para(0) = ELLIPSE_A;
         ellipse_para(1) = ELLIPSE_B;
-        if(d==3) ellipse_para(2) = ELLIPSE_C;
+        if (d == 3)
+            ellipse_para(2) = ELLIPSE_C;
 
         phi = sdf_ellipse(input, ellipse_para);
     }
@@ -147,10 +165,8 @@ double getPhi_analytic(Vector<double, d> input)
     // Ref: https://www.alanzucconi.com/2016/07/01/signed-distance-functions/#part3
     if (shape == 3)
     {
-        phi = sdf_box(input, Vector<double, d>({0.0, 0.0}), Vector<double, d>({1.0, 1.0}));
+        phi = sdf_box(input, Vector<double, d>(1.0));
     }
-
-    // std::cout<< "phi("  << input << ") = "<< phi <<std::endl;
 
     return phi;
 }
@@ -161,17 +177,44 @@ CELL getCell(Vector<double, d> point, Grid<T, d> grid)
 {
     CELL cell;
 
-    cell.c000(0) = floor((point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
-    cell.c000(1) = floor((point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
+    for (int i = 0; i < d; i++)
+    {
+        cell.c000(i) = floor((point(i) - grid.domain.min_corner(i)) * grid.one_over_dX(i)) * grid.dX(i);
 
-    cell.c010(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
-    cell.c010(1) = floor((point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
+        cell.c001(i) = cell.c000(i);
+        cell.c010(i) = cell.c000(i);
+        cell.c011(i) = cell.c000(i);
+        cell.c100(i) = cell.c000(i);
+        cell.c101(i) = cell.c000(i);
+        cell.c110(i) = cell.c000(i);
+        cell.c111(i) = cell.c000(i);
+    }
 
-    cell.c100(0) = floor((point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
-    cell.c100(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
+    cell.c100(0) += grid.dX(0);
+    cell.c010(1) += grid.dX(1);
 
-    cell.c111(0) = floor(1 + (point(0) - grid.domain.min_corner(0)) / grid.dX(0)) * grid.dX(0);
-    cell.c111(1) = floor(1 + (point(1) - grid.domain.min_corner(1)) / grid.dX(1)) * grid.dX(1);
+    cell.c110(0) += grid.dX(0);
+    cell.c110(1) += grid.dX(1);
+
+    if (d == 3)
+    {
+        cell.c001(2) += grid.dX(2);
+
+        cell.c011(1) += grid.dX(1);
+        cell.c011(2) += grid.dX(2);
+
+        cell.c101(0) += grid.dX(0);
+        cell.c101(2) += grid.dX(2);
+
+        cell.c111(0) += grid.dX(0);
+        cell.c111(1) += grid.dX(1);
+        cell.c111(2) += grid.dX(2);
+    }
+
+    // std::cout << cell.c000 << std::endl;
+    // std::cout << cell.c100 << std::endl;
+    // std::cout << cell.c010 << std::endl;
+    // std::cout << cell.c001 << std::endl;
 
     return cell;
 }
@@ -180,8 +223,8 @@ CELL getCell(Vector<double, d> point, Grid<T, d> grid)
 double getPhi(Vector<double, d> point, Grid<T, d> grid)
 {
     /* Main Logic */
-    double phi_p, phi00, phi01, phi10, phi11, phi_x0, phi_x1;
-    double a, b;
+    double phi_p;
+    double a, b, c;
     CELL cell;
 
     cell = getCell(point, grid);
@@ -189,62 +232,90 @@ double getPhi(Vector<double, d> point, Grid<T, d> grid)
     /* residual */
     a = (point(0) - cell.c000(0)) / grid.dX(0);
     b = (point(1) - cell.c000(1)) / grid.dX(1);
-    //TODO 3D
+    if (d == 3)
+        c = (point(2) - cell.c000(2)) / grid.dX(2);
 
     /* If the point is on the cell vertex */
     if ((std::abs(a) < EPSILON) && (std::abs(b) < EPSILON))
     {
         phi_p = getPhi_analytic(point);
-        std::cout << "Getting Phi analytically =" << phi_p << std::endl;
+        // std::cout << "(On Cell Boundary!) Getting Phi analytically =" << phi_p << std::endl;
         return phi_p;
     }
 
     /* Get phi's analytic result for points on cell boundaries */
-    phi00 = getPhi_analytic(cell.c000);
-    phi01 = getPhi_analytic(cell.c010);
-    phi10 = getPhi_analytic(cell.c100);
-    phi11 = getPhi_analytic(cell.c111);
+    double phi000, phi001, phi010, phi011;
+    phi000 = getPhi_analytic(cell.c000);
+    phi001 = getPhi_analytic(cell.c001);
+    phi010 = getPhi_analytic(cell.c010);
+    phi011 = getPhi_analytic(cell.c011);
 
-    //TODO: 3D
+    if (d == 2)
+    {
+        double phi_x0, phi_x1;
+        phi_x0 = a * phi001 + (1 - a) * phi000;
+        phi_x1 = a * phi011 + (1 - a) * phi010;
 
-    /* Interpolate temparory value */
-    phi_x0 = a * phi01 + (1 - a) * phi00;
-    phi_x1 = a * phi11 + (1 - a) * phi10;
+        return b * phi_x1 + (1 - b) * phi_x0;
+    }
+    else
+    {
+        double phi100, phi101, phi110, phi111;
+        phi100 = getPhi_analytic(cell.c100);
+        phi101 = getPhi_analytic(cell.c101);
+        phi110 = getPhi_analytic(cell.c110);
+        phi111 = getPhi_analytic(cell.c111);
 
-    /* result */
-    phi_p = b * phi_x1 + (1 - b) * phi_x0;
+        double phi_x00, phi_x10, phi_x01, phi_x11, phi_0y0, phi_0y1;
+        // double phi_000, phi_001, phi_010, phi_011, phi_100, phi_101, phi_110, phi_111;
+        phi_x00 = a * phi100 + (1 - a) * phi000;
+        phi_x10 = a * phi110 + (1 - a) * phi010;
+        phi_x01 = a * phi101 + (1 - a) * phi001;
+        phi_x11 = a * phi111 + (1 - a) * phi011;
 
-    return phi_p;
+        phi_0y0 = b * phi_x10 + (1 - b) * phi_x00;
+        phi_0y1 = b * phi_x11 + (1 - b) * phi_x01;
+
+        /* result */
+        return c * phi_0y0 + (1 - c) * phi_0y1;
+    }
 }
 
 /* Get nabla phi */
 Vector<double, d> getNablaPhi(Vector<double, d> point, Grid<T, d> grid)
 {
     Vector<double, d> np;
-    double phi00, phi01, phi10;
+    double phi000, phi100, phi010, phi001;
 
     CELL cell = getCell(point, grid);
-    phi00 = getPhi_analytic(cell.c000);
-    phi01 = getPhi_analytic(cell.c010);
-    phi10 = getPhi_analytic(cell.c100);
+    // phi00 = getPhi_analytic(cell.c000);
+    // phi01 = getPhi_analytic(cell.c010);
+    // phi10 = getPhi_analytic(cell.c100);
 
-    np(0) = (phi01 - phi00) / grid.dX(0);
-    np(1) = (phi10 - phi00) / grid.dX(1);
-    // TODO: 3D
+    phi000 = getPhi_analytic(cell.c000);
+    if (d == 2)
+    {
+        phi100 = getPhi_analytic(cell.c100);
+        phi010 = getPhi_analytic(cell.c010);
+    }
+    else
+    {
+        phi100 = getPhi_analytic(cell.c100);
+        phi010 = getPhi_analytic(cell.c010);
+        phi001 = getPhi_analytic(cell.c001);
 
-    // std::cout << "phi00(" << cell.c000 << ") = " << phi00 << std::endl;
-    // std::cout << "phi01(" << cell.c010 << ") = " << phi01 << std::endl;
-    // std::cout << "phi10(" << cell.c100 << ") = " << phi10 << std::endl;
+        np(2) = (phi001 - phi000) * grid.one_over_dX(2);
+    }
 
-    // std::cout << "(phi01 - phi00)" << (phi01 - phi00) << std::endl;
-    // std::cout << "(phi10 - phi00)" << (phi10 - phi00) << std::endl;
-    // std::cout << "np = " << np << std::endl;
+    np(0) = (phi100 - phi000) * grid.one_over_dX(0);
+    np(1) = (phi010 - phi000) * grid.one_over_dX(1);
 
     return np;
 }
 
 void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
 {
+    Vector<double, d> originalLocation = point;
     double currentDistance = DBL_MAX; // Max Double from float.h
     Vector<double, d> nabla_phi;
     int iteration = 1;
@@ -270,23 +341,48 @@ void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
 
         currentDistance = getPhi(point, grid);
         nabla_phi = getNablaPhi(point, grid);
-        std::cout << "* Current point location: (" << point << ")" << std::endl;
+        std::cout << "==> Iterate to (" << point << ")" << std::endl;
+
         // std::cout << "phi= " << currentDistance << std::endl;
         // std::cout << "Estimated nable_phi = " << nabla_phi << std::endl;
 
-        point(0) = point(0) - currentDistance * nabla_phi(0);
-        point(1) = point(1) - currentDistance * nabla_phi(1);
-        //TODO: 3D
+        for (int i = 0; i < d; i++)
+        {
+            point(i) = point(i) - currentDistance * nabla_phi(i);
+        }
+
         iteration++;
 
-        if (iteration >= 50)
+        if (iteration >= 100)
         {
             std::cout << "Too many iterations!" << std::endl;
+            double tmp;
+            if (d == 2)
+            {
+                if (shape == 1)
+                    tmp = std::pow(point(0), 2.0) + std::pow(point(1), 2.0);
+                if (shape == 2)
+                    tmp = std::pow(point(0), 2.0) / ELLIPSE_A + std::pow(point(1), 2.0) / ELLIPSE_B;
+                std::cout << "Radius(final position)" << tmp << std::endl;
+            }
+            else
+            {
+                if (shape == 1)
+                    tmp = std::pow(point(0), 2.0) + std::pow(point(1), 2.0) + std::pow(point(2), 2.0);
+                if (shape == 2)
+                    tmp = std::pow(point(0), 2.0) / ELLIPSE_A + std::pow(point(1), 2.0) / ELLIPSE_B + std::pow(point(2), 2.0) / ELLIPSE_C;
+
+                std::cout << "Radius(final position)" << tmp << std::endl;
+            }
+
             break;
         }
     }
 
-    std::cout << "---------------\nFinal point location: \n"
+    // std::cout << "---------------\nInput point location: \n"
+    //           << originalLocation << std::endl;
+
+    std::cout << "Final point location: \n"
               << point << std::endl;
 }
 
@@ -329,6 +425,8 @@ int main(int argc, char **argv)
     Vector<double, d> point;
     for (int i = 0; i < d; i++)
         std::cin >> point(i);
+
+    std::cout << "Input Point: (" << point << ")" << std::endl;
 
     movePointToBoundary(point, grid);
     //0.7071067
