@@ -21,16 +21,21 @@ enum
 };
 typedef double T;
 using T_INDEX = Vector<int, d>;
-int two_power_d = (int)std::pow(2.0, d);
-
-// typedef Vector<double, 2> Vector2d;
 
 /* Global variabble for shape selection */
 int shape = 0;
 
 /*-------------------------------------------*/
+
 class CELL
 {
+
+    /* 
+    Verteices for 3D Grid Cell
+    Tagged with c:xyz
+
+    For 2D Grid Cell, only use c: xy0
+    */
   public:
     Vector<double, d> c000;
     Vector<double, d> c001; // z
@@ -61,24 +66,42 @@ void menu_GetShape()
 {
     while (shape == 0)
     {
-        std::cout << "Please select a shape:" << std::endl;
-        std::cout << "Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3})." << std::endl;
-        std::cout << "1. Circle / Shpere [default with origin (0,0) ]" << std::endl;
-        std::cout << "2. Ellipse / Ellipsoid [default with origin (0,0) ]" << std::endl;
-        std::cout << "3. Square / Cubic [default with origin (0,0) ]" << std::endl;
+        if (d == 2)
+        {
+            std::cout << "Please select a shape: [default with origin (0,0)]" << std::endl;
+            std::cout << "1. Circle (r = 1)" << std::endl;
+            std::cout << "2. Ellipse (A = 4, B = 2)" << std::endl;
+            std::cout << "3. Square (width = 1)" << std::endl;
+        }
+        else
+        {
+            std::cout << "Please select a shape: [default with origin (0,0,0)]" << std::endl;
+            std::cout << "1. Shpere (r = 1)" << std::endl;
+            std::cout << "2. Ellipsoid (A = 4, B = 2, C = 3)" << std::endl;
+            std::cout << "3. Cubic (width = 1)" << std::endl;
+        }
 
         std::cin >> shape;
 
         switch (shape)
         {
         case 1:
-            std::cout << "Circle is selected" << std::endl;
+            if (d == 2)
+                std::cout << "Circle is selected" << std::endl;
+            else
+                std::cout << "Shpere is selected" << std::endl;
             break;
         case 2:
-            std::cout << "Ellipse is selected" << std::endl;
+            if (d == 2)
+                std::cout << "Ellipse is selected" << std::endl;
+            else
+                std::cout << "Ellipsoid is selected" << std::endl;
             break;
         case 3:
-            std::cout << "Rectangular is selected" << std::endl;
+            if (d == 2)
+                std::cout << "Square is selected" << std::endl;
+            else
+                std::cout << "Cubic is selected" << std::endl;
             break;
         default:
             shape = 0;
@@ -318,7 +341,7 @@ void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
     Vector<double, d> originalLocation = point;
     double currentDistance = DBL_MAX; // Max Double from float.h
     Vector<double, d> nabla_phi;
-    int iteration = 1;
+    int iteration = 0;
 
     /* Display Out/In/On information before iteration */
     double phi_p = getPhi(point, grid);
@@ -353,7 +376,7 @@ void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
 
         iteration++;
 
-        if (iteration >= 100)
+        if (iteration >= 200)
         {
             std::cout << "Too many iterations!" << std::endl;
             double tmp;
@@ -379,16 +402,16 @@ void movePointToBoundary(Vector<double, d> point, Grid<T, d> grid)
         }
     }
 
-    // std::cout << "---------------\nInput point location: \n"
-    //           << originalLocation << std::endl;
-
     std::cout << "Final point location: \n"
               << point << std::endl;
 }
 
 int main(int argc, char **argv)
 {
+    std::cout << "Current Dimension = " << d << std::endl;
+    std::cout << "\tNote: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3})." << std::endl;
 
+    /* Customize Grid Size with Parsing Arguments */
     Parse_Args parse_args;
     if (d == 2)
         parse_args.Add_Vector_2D_Argument("-size", Vector<double, 2>(500), "", "Grid resolution");
@@ -416,10 +439,11 @@ int main(int argc, char **argv)
 
     Grid<T, d> grid(counts, Range<T, d>::Unit_Box());
     // File_Utilities::Write_To_File(output_directory+"/grid.grid",grid);
-    std::cout << "Cell size: " << grid.dX(0) << std::endl;
+    std::cout << "Cell width: " << grid.dX(0) << "\n---------------" << std::endl;
 
     menu_GetShape();
 
+    /* Input arbitrary point */
     std::cout << "Please enter a coordinate to evaluate: " << std::endl;
 
     Vector<double, d> point;
@@ -428,8 +452,8 @@ int main(int argc, char **argv)
 
     std::cout << "Input Point: (" << point << ")" << std::endl;
 
+    /* Main Logic for moving points */
     movePointToBoundary(point, grid);
-    //0.7071067
 
     return 0;
 }
