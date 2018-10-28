@@ -77,6 +77,7 @@ void RigidBody::update(double h) {
 	I = R * Ibody * R.transpose();
 
 	// Update Torque
+	torque << 0,0,0; 
 	for (int i = 0; i < particleNum; i++)
 	{
 		torque += vertices[i].ri.cross(vertices[i].fi);
