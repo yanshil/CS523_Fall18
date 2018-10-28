@@ -34,7 +34,7 @@ RigidBody::~RigidBody()
 
 void RigidBody::initialize()
 {
-	v << 0, 0, 10;
+	v << 0, 1, 10;
 	omega << 0.05, 0.02, 0.01;
 
 	for (int i = 0; i < particleNum; i++)
@@ -83,6 +83,7 @@ void RigidBody::update(double h)
 	I = R * Ibody * R.transpose();
 
 	// Update Torque
+	torque << 0,0,0;
 	for (int i = 0; i < particleNum; i++)
 	{
 		torque += vertices[i].ri.cross(vertices[i].fi);
@@ -142,7 +143,9 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 {
 	// Get velocity of collide poin
 	Eigen::Vector3d padot, n, ra;
+
 	padot = pt_velocity(point);
+	
 	n << 0, 0, 1;
 	ra = point - x;
 
@@ -161,7 +164,6 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 	j = numerator / (term1 + term2 + term3 + term4);
 	Eigen::Vector3d impulse_forse;
 	impulse_forse = j * n;
-	std::cout<<"impulse = "<<impulse_forse<<std::endl;
 
 	/* Apply the impulse to the bodies */
 	P += impulse_forse;
@@ -169,7 +171,7 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 
 	/* Recompute auxiliary variables */
 	v = P / mass;
-	omega = Iinv * L;
+	omega = I.inverse() * L;
 }
 
 bool RigidBody::colliding_with_ground(Eigen::Vector3d point, double groundz)
