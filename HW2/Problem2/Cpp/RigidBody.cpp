@@ -1,4 +1,4 @@
-#define THRESHOLD 0.001
+#define THRESHOLD 0.2
 #include "RigidBody.h"
 
 using namespace rigidbody;
@@ -69,6 +69,21 @@ void RigidBody::update(double h)
 	static int frame = 0;
 	frame++;
 
+	// // Update Torque
+	// // TODO: Bug! Torque should be 0,0,0, in free-fall. But here return value other than 0
+
+	// torque << 0, 0, 0;
+	// for (int i = 0; i < particleNum; i++)
+	// {
+	// 	torque += vertices[i].ri.cross(vertices[i].fi);
+	// 	// std::cout<<"vertices[i].ri"<<vertices[i].ri<<std::endl;
+	// }
+	// std::cout << "torque=" << torque << std::endl;
+
+	P += force * h;
+	L += torque * h;
+	omega = Iinv * L;
+
 	v = P / mass;
 	x += v * h;
 
@@ -90,25 +105,9 @@ void RigidBody::update(double h)
 	q.normalize();
 
 	R = q.normalized().toRotationMatrix();
-	P += force * h;
+	
 	I = R * Ibody * R.transpose();
 	Iinv = R * Ibodyinv * R.transpose();
-
-	// Update Torque
-	// TODO: Bug! Torque should be 0,0,0, in free-fall. But here return value other than 0
-
-	// torque << 0, 0, 0;
-	// for (int i = 0; i < particleNum; i++)
-	// {
-	// 	torque += vertices[i].ri.cross(vertices[i].fi);
-
-	// 	// std::cout<<"vertices[i].ri"<<vertices[i].ri<<std::endl;
-	// }
-	
-	// std::cout<<"torque="<<torque<<std::endl;
-
-	L += torque * h;
-	omega = Iinv * L;
 
 	// Update ri!
 	for (int j = 0; j < particleNum; j++)
@@ -181,12 +180,12 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 	j = numerator / (term1 + term2 + term3 + term4);
 	Eigen::Vector3d impulse_forse;
 	impulse_forse = j * n;
-	
-	std::cout<< "v = "<<v<<std::endl;
-	std::cout<< "omega = "<<omega<<std::endl;
-	
-	std::cout<< "vrel = "<<vrel<<std::endl;
-	std::cout<< "impulse = "<<impulse_forse<<std::endl;
+
+	std::cout << "v = " << v << std::endl;
+	std::cout << "omega = " << omega << std::endl;
+
+	std::cout << "vrel = " << vrel << std::endl;
+	std::cout << "impulse = " << impulse_forse << std::endl;
 
 	/* Apply the impulse to the bodies */
 	P += impulse_forse;
@@ -241,9 +240,9 @@ void RigidBody::find_all_collisions()
 			{
 				if (colliding_with_ground(vertices[i].ri, groundz))
 				{
-					std::cout<<"----------------"<< std::endl;
-					std::cout<<"collition point:"<<vertices[i].ri<< std::endl;
-					std::cout<<"estimated_collision_point:"<<estimated_collision_point<< std::endl;
+					std::cout << "----------------" << std::endl;
+					std::cout << "collition point:" << vertices[i].ri << std::endl;
+					std::cout << "estimated_collision_point:" << estimated_collision_point << std::endl;
 					collision(epsilon, estimated_collision_point);
 					// collision(epsilon, vertices[i].ri);
 					had_collision = true;
