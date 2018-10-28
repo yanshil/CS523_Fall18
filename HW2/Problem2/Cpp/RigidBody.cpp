@@ -23,6 +23,9 @@ RigidBody::RigidBody()
 	vertices = NULL;
 
 	Ibody = Matrix3d::Zero();
+	Ibodyinv = Matrix3d::Zero();
+
+	I = Matrix3d::Zero();
 	Iinv = Matrix3d::Zero();
 
 } // End constuctor
@@ -89,15 +92,23 @@ void RigidBody::update(double h)
 	R = q.normalized().toRotationMatrix();
 	P += force * h;
 	I = R * Ibody * R.transpose();
+	Iinv = R * Ibodyinv * R.transpose();
 
 	// Update Torque
-	torque << 0, 0, 0;
-	for (int i = 0; i < particleNum; i++)
-	{
-		torque += vertices[i].ri.cross(vertices[i].fi);
-	}
+	// TODO: Bug! Torque should be 0,0,0, in free-fall. But here return value other than 0
+
+	// torque << 0, 0, 0;
+	// for (int i = 0; i < particleNum; i++)
+	// {
+	// 	torque += vertices[i].ri.cross(vertices[i].fi);
+
+	// 	// std::cout<<"vertices[i].ri"<<vertices[i].ri<<std::endl;
+	// }
+	
+	// std::cout<<"torque="<<torque<<std::endl;
+
 	L += torque * h;
-	omega = I.inverse() * L;
+	omega = Iinv * L;
 
 	// Update ri!
 	for (int j = 0; j < particleNum; j++)
@@ -170,6 +181,12 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 	j = numerator / (term1 + term2 + term3 + term4);
 	Eigen::Vector3d impulse_forse;
 	impulse_forse = j * n;
+	
+	std::cout<< "v = "<<v<<std::endl;
+	std::cout<< "omega = "<<omega<<std::endl;
+	
+	std::cout<< "vrel = "<<vrel<<std::endl;
+	std::cout<< "impulse = "<<impulse_forse<<std::endl;
 
 	/* Apply the impulse to the bodies */
 	P += impulse_forse;
@@ -177,7 +194,7 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 
 	/* Recompute auxiliary variables */
 	v = P / mass;
-	omega = I.inverse() * L;
+	omega = Iinv * L;
 }
 
 bool RigidBody::colliding_with_ground(Eigen::Vector3d point, double groundz)
@@ -214,54 +231,25 @@ void RigidBody::find_all_collisions()
 	{
 		had_collision = false;
 
-		/* Approximation */
-		Eigen::Vector3d point, width, corresponding_point_on_ground;
-		width << 1, 1, 1;
-		int lowest_i = 0;
-		point = vertices[lowest_i].ri;
-
 		for (int i = 0; i < 7; i++)
 		{
-			if (vertices[i].ri(2) < vertices[lowest_i].ri(2))
+			Vector3d estimated_collision_point;
+			estimated_collision_point << vertices[i].ri(0), vertices[i].ri(1), groundz;
+
+			/* Sensitive detect */
+			if (sdf_box(estimated_collision_point, x, Vector3d(1, 1, 1)) <= 0)
 			{
-				lowest_i = i;
-				point = vertices[i].ri;
-			}
-		}
-		corresponding_point_on_ground << point(0), point(1), groundz;
-
-		/* Detect Area */
-		if (sdf_box(corresponding_point_on_ground, x, width) <= 0.5)
-		{
-			// Approximation of exact collision t
-			if ((point(2) - groundz) > 0)
-			{
-				double t, d;
-				d = point(2) - groundz;
-				t = d / (v + omega.cross(vertices[lowest_i].ri))(2);
-
-				// t = std::sqrt((point(2) - groundz) / 9.8);
-
-				std::cout << "i =" << lowest_i << std::endl;
-				std::cout << "point(2)=" << point(2) << std::endl;
-				std::cout << "t=" << t << std::endl;
-				update(t);
-
-				for (int i = 0; i < 7; i++)
+				if (colliding_with_ground(vertices[i].ri, groundz))
 				{
-					/* code */
-					std::cout << "r("<<i<<")=" << vertices[i].ri << std::endl;
+					std::cout<<"----------------"<< std::endl;
+					std::cout<<"collition point:"<<vertices[i].ri<< std::endl;
+					std::cout<<"estimated_collision_point:"<<estimated_collision_point<< std::endl;
+					collision(epsilon, estimated_collision_point);
+					// collision(epsilon, vertices[i].ri);
+					had_collision = true;
+
+					// Tell the solver we had a collison
 				}
-			}
-
-			if (colliding_with_ground(point, groundz))
-			{
-				std::cout << "Collide..." << std::endl;
-				collision(epsilon, point);
-				had_collision = true;
-
-				/* Tell the solver we had a collision */
-				// TODO: Find the exact collision time and compute update.
 			}
 		}
 
@@ -270,8 +258,6 @@ void RigidBody::find_all_collisions()
 
 double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
 {
-	//   vec3 d = abs(p) - b;
-	//   return min(max(d.x,max(d.y,d.z)),0.0) + length(max(d,0.0));
 
 	Vector3d dTmp;
 
