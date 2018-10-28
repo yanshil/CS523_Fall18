@@ -22,7 +22,8 @@ RigidBody::RigidBody()
 
 	vertices = NULL;
 
-	Ibody = Matrix3d::Identity();
+	Ibody = Matrix3d::Zero();
+	Iinv = Matrix3d::Zero();
 
 } // End constuctor
 
