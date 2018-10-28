@@ -22,7 +22,7 @@ RigidBody::RigidBody()
 
 	vertices = NULL;
 
-	Ibody = Matrix3d::Zero();
+	Ibody = Matrix3d::Identity();
 
 } // End constuctor
 
@@ -32,11 +32,18 @@ RigidBody::~RigidBody()
 	cout << "Called Destructor" << endl;
 }
 
+void RigidBody::setVelocity(Vector3d velocity)
+{
+	this->v = velocity;
+}
+
+void RigidBody::setOmega(Vector3d omega)
+{
+	this->omega = omega;
+}
+
 void RigidBody::initialize()
 {
-	v << 0, 1, 10;
-	omega << 0.05, 0.02, 0.01;
-
 	for (int i = 0; i < particleNum; i++)
 	{
 		mass += vertices[i].mi;
@@ -83,7 +90,7 @@ void RigidBody::update(double h)
 	I = R * Ibody * R.transpose();
 
 	// Update Torque
-	torque << 0,0,0;
+	torque << 0, 0, 0;
 	for (int i = 0; i < particleNum; i++)
 	{
 		torque += vertices[i].ri.cross(vertices[i].fi);
@@ -132,8 +139,6 @@ void RigidBody::modelCube()
 	vertices[7].r0 << 1, 1, 1;
 }
 
-
-
 Eigen::Vector3d RigidBody::pt_velocity(Eigen::Vector3d point)
 {
 	return v + omega.cross(point - x);
@@ -145,7 +150,7 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 	Eigen::Vector3d padot, n, ra;
 
 	padot = pt_velocity(point);
-	
+
 	n << 0, 0, 1;
 	ra = point - x;
 
@@ -157,7 +162,7 @@ void RigidBody::collision(double epsilon, Eigen::Vector3d point)
 	double term1, term2, term3, term4, j;
 	term1 = 1 / mass;
 	term2 = 0;
-	term3 = n.dot(Iinv * ( ra.cross(n) ).cross(ra) );
+	term3 = n.dot(Iinv * (ra.cross(n)).cross(ra));
 	term4 = 0;
 
 	/* Compute the impulse */
@@ -208,31 +213,59 @@ void RigidBody::find_all_collisions()
 	{
 		had_collision = false;
 
+		/* Approximation */
+		Eigen::Vector3d point, width, corresponding_point_on_ground;
+		width << 1, 1, 1;
+		int lowest_i = 0;
+		point = vertices[lowest_i].ri;
+
 		for (int i = 0; i < 7; i++)
 		{
-			Eigen::Vector3d point, width, corresponding_point_on_ground;
-
-			point = vertices[i].ri;
-			width << 1, 1, 1;
-			corresponding_point_on_ground << point(0), point(1), groundz;
-
-			if (sdf_box(corresponding_point_on_ground, x, width) <= 0)
+			if (vertices[i].ri(2) < vertices[lowest_i].ri(2))
 			{
-				if (colliding_with_ground(point, groundz))
-				{
-					collision(epsilon, point);
-					had_collision = true;
+				lowest_i = i;
+				point = vertices[i].ri;
+			}
+		}
+		corresponding_point_on_ground << point(0), point(1), groundz;
 
-					/* Tell the solver we had a collision */
-					// TODO: Find the exact collision time and compute update.
-					
+		/* Detect Area */
+		if (sdf_box(corresponding_point_on_ground, x, width) <= 0.5)
+		{
+			// Approximation of exact collision t
+			if ((point(2) - groundz) > 0)
+			{
+				double t, d;
+				d = point(2) - groundz;
+				t = d / (v + omega.cross(vertices[lowest_i].ri))(2);
+
+				// t = std::sqrt((point(2) - groundz) / 9.8);
+
+				std::cout << "i =" << lowest_i << std::endl;
+				std::cout << "point(2)=" << point(2) << std::endl;
+				std::cout << "t=" << t << std::endl;
+				update(t);
+
+				for (int i = 0; i < 7; i++)
+				{
+					/* code */
+					std::cout << "r("<<i<<")=" << vertices[i].ri << std::endl;
 				}
+			}
+
+			if (colliding_with_ground(point, groundz))
+			{
+				std::cout << "Collide..." << std::endl;
+				collision(epsilon, point);
+				had_collision = true;
+
+				/* Tell the solver we had a collision */
+				// TODO: Find the exact collision time and compute update.
 			}
 		}
 
 	} while (had_collision);
 }
-
 
 double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
 {

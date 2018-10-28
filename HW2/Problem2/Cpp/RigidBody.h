@@ -44,6 +44,9 @@ class RigidBody
     RigidBody();
     ~RigidBody();
 
+    void setVelocity(Vector3d velocity);
+    void setOmega(Vector3d omega);
+
     void initialize();
     void update(double timestep);
     void modelCube();
