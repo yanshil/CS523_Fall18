@@ -27,36 +27,6 @@
 * Output
 
 ```
-# Example output file generated
-# (When d = 2)
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_circle.out
-1
-0 0
-
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_ellipse.out
-2
--10 -10
-
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_square.out
-3
--5.62 1.2424
-
-# Change (d=3) before building the project for 3D case.
-# Example output file generated
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_shpere.out
-1
-0 0 0
-
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_ellipsolid.out
-2
-0.001 0.245 0.9983
-
-./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_cubic.out
-3
-5 5 5
-```
-
-```
 ./Output/Problem1_circle.out
 ./Output/Problem1_ellipse.out
 ./Output/Problem1_square.out
@@ -92,6 +62,36 @@ Set `CMAKE_BUILD_TYPE` to `Release` and turn on the following flags: `ENABLE_GRI
 ### Usage
 * Dimension (d=2 or d=3) is modified by modifying Line20 in `hw2.cpp`
 * Grid size can be set by parsing arguments (when d=2): `./bin/foo -size 500 500` (default is 500, 500)
+
+```
+# Example output file generating
+# (When d = 2)
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_circle.out
+1
+0 0
+
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_ellipse.out
+2
+-10 -10
+
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_square.out
+3
+-5.62 1.2424
+
+# Change (d=3) before building the project for 3D case.
+# Example output file generated
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_shpere.out
+1
+0 0 0
+
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_ellipsolid.out
+2
+0.001 0.245 0.9983
+
+./bin/foo >> ~/Workspace/CS523/HW2/Output/Problem1_cubic.out
+3
+5 5 5
+```
 
 ## Problem 2
 
