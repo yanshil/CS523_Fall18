@@ -33,7 +33,7 @@ class RigidBody
     Matrix3d Ibody;
     Matrix3d Ibodyinv;
 
-    Matrix3d I;
+    Matrix3d I;     // Should be initialize and update before L....
     Matrix3d Iinv;
     Matrix3d R;
 
@@ -56,10 +56,6 @@ class RigidBody
     void modelCube();
     void modelWall();
 
-    // Vector3d pt_velocity(Vector3d point);
-    // bool colliding_with_ground(Vector3d point, double groundz);
-    // void collision(double epsilon, Vector3d point);
-    // void find_all_collisions();
 };
 
 } // namespace rigidbody

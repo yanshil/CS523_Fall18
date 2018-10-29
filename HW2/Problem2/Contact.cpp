@@ -12,23 +12,28 @@ bool colliding(Contact *c)
     Eigen::Vector3d pbdot = pt_velocity(c->b, c->p);
     double vrel = c->n.dot(padot);
 
-    if (vrel > THRESHOLD)
+    if ((vrel <= -THRESHOLD) & (c->p[2] <= c->b->x[2])) // TODO: Should use sdf here
     {
-        return false;
-    }
-    if (vrel > -THRESHOLD)
-    {
-        return false;
-    }
-    else if( c->p[2] <= c->b->x[2] )
-    {
-        std::cout<<"c->p="<<c->p<<std::endl;
-        std::cout<<"c->b->x(2)="<<c->b->x[2]<<std::endl;
-        std::cout<<"vrel="<<vrel<<std::endl;
         return true;
     }
     else
         return false;
+
+    // if (vrel > THRESHOLD)
+    // {
+    //     return false;
+    // }
+    // if (vrel > -THRESHOLD)
+    // {
+    //     return false;
+    // }
+    // else if (c->p[2] <= c->b->x[2]) // TODO: Should use sdf here
+    // {
+    //     std::cout << "vrel=" << vrel << std::endl;
+    //     return true;
+    // }
+    // else
+    //     return false;
 }
 
 void collision(Contact *c, double epsilon)
