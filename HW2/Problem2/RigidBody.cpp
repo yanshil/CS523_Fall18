@@ -7,26 +7,30 @@ double sdf_box(Vector3d input, Vector3d origin, Vector3d width);
 
 RigidBody::RigidBody()
 {
-	x << 0, 0, 0;
+	mass = 0;
+	// one_over_mass = 0;
+
 	v << 0, 0, 0;
 	omega << 0, 0, 0;
 
-	q = Eigen::Quaterniond{Eigen::AngleAxisd{0, Eigen::Vector3d{1, 1, 1}}};
-	R = q.normalized().toRotationMatrix();
-
-	mass = 0;
-	particleNum = 0;
-
-	force << 0, 0, 0;
-	torque << 0, 0, 0;
-
-	vertices = NULL;
+	x << 0, 0, 0;
+	n << 1, 1, 1;
+	q = Eigen::Quaterniond{Eigen::AngleAxisd{0, n}};
+	P << 0, 0, 0;
+	L << 0, 0, 0;
 
 	Ibody = Matrix3d::Zero();
 	Ibodyinv = Matrix3d::Zero();
 
 	I = Matrix3d::Zero();
-	Iinv = Matrix3d::Zero();
+	// Iinv = Matrix3d::Zero();
+	R = q.normalized().toRotationMatrix();
+
+	force << 0, 0, 0;
+	torque << 0, 0, 0;
+
+	vertices = NULL;
+	particleNum = 0;
 
 } // End constuctor
 
@@ -57,11 +61,28 @@ void RigidBody::initialize()
 		Ibody += vertices[i].mi * (vertices[i].r0.transpose() * vertices[i].r0 * Matrix3d::Identity() - vertices[i].r0 * vertices[i].r0.transpose());
 	}
 
-	Ibodyinv = Ibody.inverse();
+	if (particleNum != 0)
+	{
+		one_over_mass = 1.0 / mass;
+		Ibodyinv = Ibody.inverse();
+		P = v * mass;
+		L = I * omega;
+		I = R * Ibody * R.transpose();
+		Iinv = I.inverse();
+	}
+	else
+	{
+		// Solid Wall with 1/mass = 0 and Iinv = Zeros()
+		one_over_mass = 0;
+		Iinv = Matrix3d::Zero();
+		n << 0, 0, 1;	// Normal
+		x << 0, 0, -5;
+	}
+}
 
-	P = v * mass;
-	I = R * Ibody * R.transpose();
-	L = I * omega;
+void RigidBody::setCenterofMass(Vector3d x)
+{
+	this->x = x;
 }
 
 void RigidBody::update(double h)
@@ -105,7 +126,7 @@ void RigidBody::update(double h)
 	q.normalize();
 
 	R = q.normalized().toRotationMatrix();
-	
+
 	I = R * Ibody * R.transpose();
 	Iinv = R * Ibodyinv * R.transpose();
 
@@ -150,133 +171,139 @@ void RigidBody::modelCube()
 	vertices[7].r0 << 1, 1, 1;
 }
 
-Eigen::Vector3d RigidBody::pt_velocity(Eigen::Vector3d point)
+void RigidBody::modelWall()
 {
-	return v + omega.cross(point - x);
+	particleNum = 0;
 }
 
-void RigidBody::collision(double epsilon, Eigen::Vector3d point)
-{
-	// Get velocity of collide poin
-	Eigen::Vector3d padot, n, ra;
+// Eigen::Vector3d RigidBody::pt_velocity(Eigen::Vector3d point)
+// {
+// 	return v + omega.cross(point - x);
+// }
 
-	padot = pt_velocity(point);
+// void RigidBody::collision(double epsilon, Eigen::Vector3d point)
+// {
+// 	// Get velocity of collide poin
+// 	Eigen::Vector3d padot, n, ra;
 
-	n << 0, 0, 1;
-	ra = point - x;
+// 	padot = pt_velocity(point);
 
-	double vrel, numerator;
-	// double vrel = n * (padot - pbdot);
-	vrel = n.dot(padot);
-	numerator = -(1 + epsilon) * vrel;
+// 	n << 0, 0, 1;
+// 	ra = point - x;
 
-	double term1, term2, term3, term4, j;
-	term1 = 1 / mass;
-	term2 = 0;
-	term3 = n.dot(Iinv * (ra.cross(n)).cross(ra));
-	term4 = 0;
+// 	double vrel, numerator;
+// 	// double vrel = n * (padot - pbdot);
+// 	vrel = n.dot(padot);
+// 	numerator = -(1 + epsilon) * vrel;
 
-	/* Compute the impulse */
-	j = numerator / (term1 + term2 + term3 + term4);
-	Eigen::Vector3d impulse_forse;
-	impulse_forse = j * n;
+// 	double term1, term2, term3, term4, j;
+// 	term1 = 1 / mass;
+// 	term2 = 0;
+// 	term3 = n.dot(Iinv * (ra.cross(n)).cross(ra));
+// 	term4 = 0;
 
-	std::cout << "v = " << v << std::endl;
-	std::cout << "omega = " << omega << std::endl;
+// 	/* Compute the impulse */
+// 	std::cout << "term3=" << term3 << std::endl;
+// 	j = numerator / (term1 + term2 + term3 + term4);
+// 	Eigen::Vector3d impulse_forse;
+// 	impulse_forse = j * n;
 
-	std::cout << "vrel = " << vrel << std::endl;
-	std::cout << "impulse = " << impulse_forse << std::endl;
+// 	std::cout << "v = " << v << std::endl;
+// 	std::cout << "omega = " << omega << std::endl;
 
-	/* Apply the impulse to the bodies */
-	P += impulse_forse;
-	L += ra.cross(impulse_forse);
+// 	std::cout << "vrel = " << vrel << std::endl;
+// 	std::cout << "impulse = " << impulse_forse << std::endl;
 
-	/* Recompute auxiliary variables */
-	v = P / mass;
-	omega = Iinv * L;
-}
+// 	/* Apply the impulse to the bodies */
+// 	P += impulse_forse;
+// 	L += ra.cross(impulse_forse);
 
-bool RigidBody::colliding_with_ground(Eigen::Vector3d point, double groundz)
-{
-	// Find collision point: Min z vector
-	Eigen::Vector3d n, padot;
-	double vrel;
+// 	/* Recompute auxiliary variables */
+// 	v = P / mass;
+// 	omega = Iinv * L;
+// }
 
-	/* code */
-	n << 0, 0, 1;
-	padot = pt_velocity(point);
-	vrel = n.dot(padot);
+// bool RigidBody::colliding_with_ground(Eigen::Vector3d point, double groundz)
+// {
+// 	// Find collision point: Min z vector
+// 	Eigen::Vector3d n, padot;
+// 	double vrel;
 
-	if (vrel > THRESHOLD)
-	{
-		return false;
-	}
-	if (vrel > -THRESHOLD)
-	{
-		return false;
-	}
-	else
-		return true;
-}
+// 	/* code */
+// 	n << 0, 0, 1;
+// 	padot = pt_velocity(point);
+// 	vrel = n.dot(padot);
 
-void RigidBody::find_all_collisions()
-{
+// 	if (vrel > THRESHOLD)
+// 	{
+// 		return false;
+// 	}
+// 	if (vrel > -THRESHOLD)
+// 	{
+// 		return false;
+// 	}
+// 	else
+// 		return true;
+// }
 
-	bool had_collision;
-	double epsilon = 0.5;
-	double groundz = -5;
+// void RigidBody::find_all_collisions()
+// {
 
-	do
-	{
-		had_collision = false;
+// 	bool had_collision;
+// 	double epsilon = 0.5;
+// 	double groundz = -5;
 
-		for (int i = 0; i < 7; i++)
-		{
-			Vector3d estimated_collision_point;
-			estimated_collision_point << vertices[i].ri(0), vertices[i].ri(1), groundz;
+// 	do
+// 	{
+// 		had_collision = false;
 
-			/* Sensitive detect */
-			if (sdf_box(estimated_collision_point, x, Vector3d(1, 1, 1)) <= 0)
-			{
-				if (colliding_with_ground(vertices[i].ri, groundz))
-				{
-					std::cout << "----------------" << std::endl;
-					std::cout << "collition point:" << vertices[i].ri << std::endl;
-					std::cout << "estimated_collision_point:" << estimated_collision_point << std::endl;
-					collision(epsilon, estimated_collision_point);
-					// collision(epsilon, vertices[i].ri);
-					had_collision = true;
+// 		for (int i = 0; i < 7; i++)
+// 		{
+// 			Vector3d estimated_collision_point;
+// 			estimated_collision_point << vertices[i].ri(0), vertices[i].ri(1), groundz;
 
-					// Tell the solver we had a collison
-				}
-			}
-		}
+// 			/* Sensitive detect */
+// 			if (sdf_box(estimated_collision_point, x, Vector3d(1, 1, 1)) <= 0)
+// 			{
+// 				if (colliding_with_ground(vertices[i].ri, groundz))
+// 				{
+// 					std::cout << "----------------" << std::endl;
+// 					std::cout << "collition point:" << vertices[i].ri << std::endl;
+// 					std::cout << "estimated_collision_point:" << estimated_collision_point << std::endl;
+// 					collision(epsilon, estimated_collision_point);
+// 					// collision(epsilon, vertices[i].ri);
+// 					had_collision = true;
 
-	} while (had_collision);
-}
+// 					// Tell the solver we had a collison
+// 				}
+// 			}
+// 		}
 
-double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
-{
+// 	} while (had_collision);
+// }
+// 
+// double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
+// {
 
-	Vector3d dTmp;
+// 	Vector3d dTmp;
 
-	for (int i = 0; i < dTmp.size(); i++)
-	{
-		dTmp[i] = std::abs(input[i] - origin[i]) - width[i];
-	}
+// 	for (int i = 0; i < dTmp.size(); i++)
+// 	{
+// 		dTmp[i] = std::abs(input[i] - origin[i]) - width[i];
+// 	}
 
-	// If in the box, this will be the SDF.
-	double dTmpMax = dTmp.maxCoeff();
+// 	// If in the box, this will be the SDF.
+// 	double dTmpMax = dTmp.maxCoeff();
 
-	double dTmpLength = 0;
-	for (int i = 0; i < dTmp.size(); i++)
-	{
-		if (dTmp(i) < 0)
-			dTmp(i) = 0;
-		dTmpLength += std::pow(dTmp(i), 2.0);
-	}
+// 	double dTmpLength = 0;
+// 	for (int i = 0; i < dTmp.size(); i++)
+// 	{
+// 		if (dTmp(i) < 0)
+// 			dTmp(i) = 0;
+// 		dTmpLength += std::pow(dTmp(i), 2.0);
+// 	}
 
-	dTmpLength = std::sqrt(dTmpLength);
+// 	dTmpLength = std::sqrt(dTmpLength);
 
-	return std::min(dTmpMax, 0.0) + dTmpLength;
-}
+// 	return std::min(dTmpMax, 0.0) + dTmpLength;
+// }

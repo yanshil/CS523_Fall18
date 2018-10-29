@@ -19,11 +19,13 @@ class RigidBody
 {
   public:
     double mass;
+    double one_over_mass;
 
     Vector3d v;
     Vector3d omega;
 
     Vector3d x;    // x(t)
+    Vector3d n;    // Initial Direction / Normal for Wall
     Quaterniond q; // q(t)
     Vector3d P;    // P(t)
     Vector3d L;    // L(t)
@@ -31,8 +33,8 @@ class RigidBody
     Matrix3d Ibody;
     Matrix3d Ibodyinv;
 
-    Matrix3d Iinv;
     Matrix3d I;
+    Matrix3d Iinv;
     Matrix3d R;
 
     Vector3d force;
@@ -46,14 +48,18 @@ class RigidBody
 
     void setVelocity(Vector3d velocity);
     void setOmega(Vector3d omega);
+    void setCenterofMass(Vector3d x);
 
     void initialize();
     void update(double timestep);
+
     void modelCube();
-    Vector3d pt_velocity(Vector3d point);
-    bool colliding_with_ground(Vector3d point, double groundz);
-    void collision(double epsilon, Vector3d point);
-    void find_all_collisions();
+    void modelWall();
+
+    // Vector3d pt_velocity(Vector3d point);
+    // bool colliding_with_ground(Vector3d point, double groundz);
+    // void collision(double epsilon, Vector3d point);
+    // void find_all_collisions();
 };
 
 } // namespace rigidbody
