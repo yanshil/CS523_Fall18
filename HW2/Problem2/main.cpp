@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 {
 
     rb.modelCube();
-    rb.setVelocity(Vector3d(0, 0, 10));
-    rb.setOmega(Vector3d(0.05, 0.02, 0.01));
+    rb.setVelocity(Vector3d(0, 1, 10));
+    rb.setOmega(Vector3d(0.05, 0.03, 0.01));
     rb.initialize();
 
     groundz = -5.0;
