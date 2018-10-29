@@ -34,20 +34,22 @@ GLint faces[6][4] = {/* Vertex indices for the 6 faces of a cube. */
 GLfloat v[8][3]; /* Will be filled in with X,Y,Z vertexes. */
 
 // Light Control
-GLfloat light_diffuse[] = {1.0, 0.3, 0.5, 1.0};      /* Red diffuse light. */
-GLfloat light_position[] = {10.0, 10.0, 10.0, 10.0}; /* Infinite light location. */
+GLfloat LightAmbient[]= { 1.0, 1.0, 1.0, 1.0 }; 
+GLfloat light_diffuse[] = {1.0, 1.0, 1.0, 1.0};      /* x, y, z, w */
+GLfloat light_position[] = {0.0, 0.0, 0.0, 10.0}; /* Infinite light location. */
+
 
 int main(int argc, char *argv[])
 {
 
     rb.modelCube();
-    rb.setVelocity(Vector3d(0, 0, 10));
+    rb.setVelocity(Vector3d(0, 2, 10));
     rb.setOmega(Vector3d(0.05, 0.02, 0.01));
     rb.initialize();
 
     ground.modelWall();
     ground.initialize();
-    ground.setCenterofMass(Vector3d(0,0,-5));
+    ground.setCenterofMass(Vector3d(0, 0, -5));
 
     for (int i = 0; i < 8; i++)
     {
@@ -75,8 +77,11 @@ void init(void)
 {
 
     /* Enable a single OpenGL light. */
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);  
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    
+
     glEnable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
 
@@ -110,12 +115,24 @@ void drawBox()
     }
 }
 
+void drawPlane()
+{
+    glBegin(GL_QUADS);
+    glVertex3f(-100, -100, -5);
+    glVertex3f(-100, 100, -5);
+    glVertex3f(100, 100, -5);
+    glVertex3f(100, -100, -5);
+    glEnd();
+}
+
 void display()
 {
     copyToV(&rb); // Copy the coordinates to global v
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     drawBox();
+    drawPlane();
+
     glFlush();
     glutSwapBuffers();
 

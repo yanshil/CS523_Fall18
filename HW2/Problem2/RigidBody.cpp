@@ -105,7 +105,7 @@ void RigidBody::update(double h)
 	L += torque * h;
 	omega = Iinv * L;
 
-	std::cout << "omega=" << omega << std::endl;
+	// std::cout << "omega=" << omega << std::endl;
 
 	v = P / mass;
 	x += v * h;
@@ -116,11 +116,7 @@ void RigidBody::update(double h)
 	omega_q.vec() = omega;
 	omega_q.normalize();
 	Quaterniond qdot_2 = omega_q * q;
-	/*
-	    2nd time!!!
-	    Wrote 1/2, but well, 1/2 = 0.
-	    Should be 1.0 /2 or (double)1/2
-	*/
+
 	q.w() = q.w() + h * 0.5 * (qdot_2.w());
 	q.x() = q.x() + h * 0.5 * (qdot_2.x());
 	q.y() = q.y() + h * 0.5 * (qdot_2.y());
@@ -177,29 +173,3 @@ void RigidBody::modelWall()
 {
 	particleNum = 0;
 }
-
-// double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
-// {
-
-// 	Vector3d dTmp;
-
-// 	for (int i = 0; i < dTmp.size(); i++)
-// 	{
-// 		dTmp[i] = std::abs(input[i] - origin[i]) - width[i];
-// 	}
-
-// 	// If in the box, this will be the SDF.
-// 	double dTmpMax = dTmp.maxCoeff();
-
-// 	double dTmpLength = 0;
-// 	for (int i = 0; i < dTmp.size(); i++)
-// 	{
-// 		if (dTmp(i) < 0)
-// 			dTmp(i) = 0;
-// 		dTmpLength += std::pow(dTmp(i), 2.0);
-// 	}
-
-// 	dTmpLength = std::sqrt(dTmpLength);
-
-// 	return std::min(dTmpMax, 0.0) + dTmpLength;
-// }

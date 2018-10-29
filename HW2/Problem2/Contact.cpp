@@ -12,28 +12,22 @@ bool colliding(Contact *c)
     Eigen::Vector3d pbdot = pt_velocity(c->b, c->p);
     double vrel = c->n.dot(padot);
 
-    if ((vrel <= -THRESHOLD) & (c->p[2] <= c->b->x[2])) // TODO: Should use sdf here
+    // // R * vertices[j].r0 + x
+    // // input <- transform corresponding_point_on_ground
+    // Vector3d estimate_contact_point = c->p;
+    // estimate_contact_point(2) = c->b->x(2);
+    // Vector3d input = c->a->R * estimate_contact_point + c->a->x;
+    // // (sdf_box(input, c->a->x, Vector3d(1,1,1)) <= 0)
+    // // std::cout << "estimate_contact_point" << estimate_contact_point << std::endl;
+    // std::cout << "estimated sdf" << sdf_box(input, c->a->x, Vector3d(1,1,1)) << std::endl;
+    // std::cout << "input" << input << std::endl;
+// (c->p[2] <= c->b->x[2])
+    if ((vrel <= -THRESHOLD) & (c->p[2] - c->b->x[2] <= 0) ) // TODO: Should use sdf here
     {
         return true;
     }
     else
         return false;
-
-    // if (vrel > THRESHOLD)
-    // {
-    //     return false;
-    // }
-    // if (vrel > -THRESHOLD)
-    // {
-    //     return false;
-    // }
-    // else if (c->p[2] <= c->b->x[2]) // TODO: Should use sdf here
-    // {
-    //     std::cout << "vrel=" << vrel << std::endl;
-    //     return true;
-    // }
-    // else
-    //     return false;
 }
 
 void collision(Contact *c, double epsilon)
