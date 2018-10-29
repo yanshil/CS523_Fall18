@@ -17,7 +17,7 @@ using namespace Nova;
 
 enum
 {
-    d = 3
+    d = 2
 };
 typedef double T;
 using T_INDEX = Vector<int, d>;

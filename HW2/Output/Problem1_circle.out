@@ -1,0 +1,66 @@
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Circle is selected
+Please enter a coordinate to evaluate: 
+Input Point: (0 0)
+---------------
+* Given point is in the boundary
+---------------
+Iteration 0
+==> Iterate to (0 0)
+---------------
+Iteration 1
+==> Iterate to (1 1)
+---------------
+Iteration 2
+==> Iterate to (0.70696 0.70696)
+Final point location: 
+0.707818 0.707818
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Circle is selected
+Please enter a coordinate to evaluate: 
+Input Point: (-2.4536 -5.76532)
+---------------
+* Given point is out of boundary
+---------------
+Iteration 0
+==> Iterate to (-2.4536 -5.76532)
+---------------
+Iteration 1
+==> Iterate to (-0.392114 -0.920042)
+Final point location: 
+-0.391113 -0.917694
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Circle is selected
+Please enter a coordinate to evaluate: 
+Input Point: (0.5 -4.342)
+---------------
+* Given point is out of boundary
+---------------
+Iteration 0
+==> Iterate to (0.5 -4.342)
+---------------
+Iteration 1
+==> Iterate to (0.113637 -0.993445)
+Final point location: 
+0.113616 -0.993256

@@ -12,6 +12,7 @@ void copyToV(RigidBody *rb);
 
 void init();
 void drawBox();
+void drawPlane();
 void display();
 void keyboard(unsigned char key, int, int);
 void timer(int);
@@ -33,39 +34,44 @@ GLint faces[6][4] = {/* Vertex indices for the 6 faces of a cube. */
                      {7, 4, 0, 3}};
 GLfloat v[8][3]; /* Will be filled in with X,Y,Z vertexes. */
 
-// Light Control
-GLfloat LightAmbient[]= { 1.0, 1.0, 1.0, 1.0 }; 
-GLfloat light_diffuse[] = {1.0, 1.0, 1.0, 1.0};      /* x, y, z, w */
-GLfloat light_position[] = {0.0, 0.0, 0.0, 10.0}; /* Infinite light location. */
+GLfloat groundz; /* The z axis of the ground plane */
 
+//------------------------------------------------
+
+// Light Control
+GLfloat light_ambient[] = {0.0, 0.0, 0.0, 1.0};
+GLfloat light_diffuse[] = {0.9451, 0.3647, 0.3961, 1.0}; /* x, y, z, w */
+GLfloat light_position[] = {1.0, 1.0, 0.0, 10.0};       /* Infinite light location. */
+
+//-------------------------------------------------
 
 int main(int argc, char *argv[])
 {
 
     rb.modelCube();
-    rb.setVelocity(Vector3d(0, 2, 10));
+    rb.setVelocity(Vector3d(0, 0, 10));
     rb.setOmega(Vector3d(0.05, 0.02, 0.01));
     rb.initialize();
 
+    groundz = -5.0;
     ground.modelWall();
     ground.initialize();
-    ground.setCenterofMass(Vector3d(0, 0, -5));
+    ground.setCenterofMass(Vector3d(0, 0, groundz));
 
     for (int i = 0; i < 8; i++)
     {
         c[i].a = &rb;
         c[i].b = &ground;
-        // c[i].p = rb.vertices[i].ri;
-        // c[i].n = ground.n;
     }
 
     //----------------------------------------
     glutInit(&argc, argv); // Initialize GLUT
     glutInitWindowSize(1024, 1024);
-    glutCreateWindow("Rotating Cude"); // Create a window
+    glutCreateWindow("Falling Cude"); // Create a window
 
     glutDisplayFunc(display);   // Register display callback
     glutKeyboardFunc(keyboard); // Register keyboard callback
+
     init();
     glutTimerFunc(100, timer, 0);
     glutMainLoop(); // Enter main event loop
@@ -77,13 +83,17 @@ void init(void)
 {
 
     /* Enable a single OpenGL light. */
-    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);  
+    glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-    
 
-    glEnable(GL_LIGHT0);
     glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0); // Diffuse Light
+    // glEnable(GL_LIGHT1); // Ambient Light
+
+    /* Enable: cause a material color to track the current color */
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
 
     /* Use depth buffering for hidden surface elimination. */
     glEnable(GL_DEPTH_TEST);
@@ -118,10 +128,10 @@ void drawBox()
 void drawPlane()
 {
     glBegin(GL_QUADS);
-    glVertex3f(-100, -100, -5);
-    glVertex3f(-100, 100, -5);
-    glVertex3f(100, 100, -5);
-    glVertex3f(100, -100, -5);
+    glVertex3f(-100, -100, groundz);
+    glVertex3f(-100, 100, groundz);
+    glVertex3f(100, 100, groundz);
+    glVertex3f(100, -100, groundz);
     glEnd();
 }
 
@@ -137,8 +147,6 @@ void display()
     glutSwapBuffers();
 
     // Calculate new position and orientation of vertices
-    // rb.find_all_collisions();
-    // rb.update(0.01);
     find_all_collisions(c, 8);
     rb.update(0.01);
 }

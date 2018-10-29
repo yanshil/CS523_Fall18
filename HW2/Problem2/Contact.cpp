@@ -1,5 +1,6 @@
 #include "Contact.h"
 #define THRESHOLD 0.01
+#include <float.h> // DBL_MAX
 
 Eigen::Vector3d pt_velocity(RigidBody *rb, Eigen::Vector3d p)
 {
@@ -12,17 +13,7 @@ bool colliding(Contact *c)
     Eigen::Vector3d pbdot = pt_velocity(c->b, c->p);
     double vrel = c->n.dot(padot);
 
-    // // R * vertices[j].r0 + x
-    // // input <- transform corresponding_point_on_ground
-    // Vector3d estimate_contact_point = c->p;
-    // estimate_contact_point(2) = c->b->x(2);
-    // Vector3d input = c->a->R * estimate_contact_point + c->a->x;
-    // // (sdf_box(input, c->a->x, Vector3d(1,1,1)) <= 0)
-    // // std::cout << "estimate_contact_point" << estimate_contact_point << std::endl;
-    // std::cout << "estimated sdf" << sdf_box(input, c->a->x, Vector3d(1,1,1)) << std::endl;
-    // std::cout << "input" << input << std::endl;
-// (c->p[2] <= c->b->x[2])
-    if ((vrel <= -THRESHOLD) & (c->p[2] - c->b->x[2] <= 0) ) // TODO: Should use sdf here
+    if ((vrel <= -THRESHOLD))
     {
         return true;
     }
@@ -52,8 +43,6 @@ void collision(Contact *c, double epsilon)
     j = numerator / (term1 + term2 + term3 + term4);
     Eigen::Vector3d impulse_forse = j * n;
 
-    std::cout << "impulse = " << impulse_forse << std::endl;
-
     /* Apply the impulse to the bodies */
     c->a->P += impulse_forse;
     c->b->P -= impulse_forse;
@@ -82,13 +71,18 @@ void find_all_collisions(Contact contacts[], int ncontacts)
             contacts[i].p = contacts[i].a->vertices[i].ri;
             contacts[i].n = contacts[i].b->n;
 
-            if (colliding(&contacts[i]))
+            Vector3d corresponding_point_on_ground = contacts[i].p;
+            corresponding_point_on_ground(2) = contacts[i].b->x(2);
+
+            double sdf = sdf_box(corresponding_point_on_ground, contacts[i].a->x, Vector3d(2, 2, 2));
+
+            if (sdf <= 0 & colliding(&contacts[i]))
             {
                 collision(&contacts[i], epsilon);
                 had_collision = true;
 
                 /* Tell the solver we had a collision */
-                // TODO: Find the exact collision time and compute update.
+                // TODO: Find the exact collision time and compute update?
             }
         }
 
@@ -99,14 +93,16 @@ double sdf_box(Vector3d input, Vector3d origin, Vector3d width)
 {
 
     Vector3d dTmp;
+    double dTmpMax = -DBL_MAX; // If in the box, this will be the SDF.
 
     for (int i = 0; i < dTmp.size(); i++)
     {
         dTmp[i] = std::abs(input[i] - origin[i]) - width[i];
+        if (dTmp[i] > dTmpMax)
+        {
+            dTmpMax = dTmp[i];
+        }
     }
-
-    // If in the box, this will be the SDF.
-    double dTmpMax = dTmp.maxCoeff();
 
     double dTmpLength = 0;
     for (int i = 0; i < dTmp.size(); i++)

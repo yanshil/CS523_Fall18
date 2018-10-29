@@ -105,8 +105,6 @@ void RigidBody::update(double h)
 	L += torque * h;
 	omega = Iinv * L;
 
-	// std::cout << "omega=" << omega << std::endl;
-
 	v = P / mass;
 	x += v * h;
 

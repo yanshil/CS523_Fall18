@@ -1,0 +1,183 @@
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Ellipse is selected
+Please enter a coordinate to evaluate: 
+Input Point: (-10 -10)
+---------------
+* Given point is out of boundary
+---------------
+Iteration 0
+==> Iterate to (-10 -10)
+---------------
+Iteration 1
+==> Iterate to (-7.78882 -5.5775)
+---------------
+Iteration 2
+==> Iterate to (-6.19279 -3.29188)
+---------------
+Iteration 3
+==> Iterate to (-5.04405 -2.07098)
+---------------
+Iteration 4
+==> Iterate to (-4.21498 -1.39032)
+---------------
+Iteration 5
+==> Iterate to (-3.61416 -0.993795)
+---------------
+Iteration 6
+==> Iterate to (-3.1762 -0.753217)
+---------------
+Iteration 7
+==> Iterate to (-2.85575 -0.601334)
+---------------
+Iteration 8
+==> Iterate to (-2.62098 -0.502509)
+---------------
+Iteration 9
+==> Iterate to (-2.44804 -0.436145)
+---------------
+Iteration 10
+==> Iterate to (-2.32029 -0.390566)
+---------------
+Iteration 11
+==> Iterate to (-2.22614 -0.358854)
+---------------
+Iteration 12
+==> Iterate to (-2.15658 -0.336435)
+---------------
+Iteration 13
+==> Iterate to (-2.10529 -0.320411)
+---------------
+Iteration 14
+==> Iterate to (-2.06757 -0.30891)
+---------------
+Iteration 15
+==> Iterate to (-2.03976 -0.300599)
+---------------
+Iteration 16
+==> Iterate to (-2.01924 -0.294542)
+---------------
+Iteration 17
+==> Iterate to (-2.0039 -0.290061)
+---------------
+Iteration 18
+==> Iterate to (-1.99274 -0.286819)
+---------------
+Iteration 19
+==> Iterate to (-1.98415 -0.284347)
+---------------
+Iteration 20
+==> Iterate to (-1.9776 -0.282467)
+---------------
+Iteration 21
+==> Iterate to (-1.97319 -0.281204)
+---------------
+Iteration 22
+==> Iterate to (-1.96982 -0.280244)
+Final point location: 
+-1.96749 -0.279579
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Ellipse is selected
+Please enter a coordinate to evaluate: 
+Input Point: (3.2346 7.5432)
+---------------
+* Given point is out of boundary
+---------------
+Iteration 0
+==> Iterate to (3.2346 7.5432)
+---------------
+Iteration 1
+==> Iterate to (2.57091 4.44847)
+---------------
+Iteration 2
+==> Iterate to (2.11733 2.87889)
+---------------
+Iteration 3
+==> Iterate to (1.81882 2.0671)
+---------------
+Iteration 4
+==> Iterate to (1.62829 1.63418)
+---------------
+Iteration 5
+==> Iterate to (1.50918 1.39514)
+---------------
+Iteration 6
+==> Iterate to (1.43586 1.25959)
+---------------
+Iteration 7
+==> Iterate to (1.39109 1.18106)
+---------------
+Iteration 8
+==> Iterate to (1.3635 1.13422)
+---------------
+Iteration 9
+==> Iterate to (1.34665 1.10616)
+---------------
+Iteration 10
+==> Iterate to (1.33627 1.08909)
+---------------
+Iteration 11
+==> Iterate to (1.32991 1.07874)
+---------------
+Iteration 12
+==> Iterate to (1.32632 1.07292)
+---------------
+Iteration 13
+==> Iterate to (1.32386 1.06894)
+Final point location: 
+1.32266 1.067
+Current Dimension = 2
+	Note: 2D / 3D is modified from #20 of code. (Setting enum{d=2} or enum{d=3}).
+Cell width: 0.002
+---------------
+Please select a shape: [default with origin (0,0)]
+1. Circle (r = 1)
+2. Ellipse (A = 4, B = 2)
+3. Square (width = 1)
+Ellipse is selected
+Please enter a coordinate to evaluate: 
+Input Point: (0.111 0.524)
+---------------
+* Given point is in the boundary
+---------------
+Iteration 0
+==> Iterate to (0.111 0.524)
+---------------
+Iteration 1
+==> Iterate to (0.157323 0.961461)
+---------------
+Iteration 2
+==> Iterate to (0.175494 1.1837)
+---------------
+Iteration 3
+==> Iterate to (0.183792 1.2958)
+---------------
+Iteration 4
+==> Iterate to (0.18779 1.35234)
+---------------
+Iteration 5
+==> Iterate to (0.18971 1.38011)
+---------------
+Iteration 6
+==> Iterate to (0.190658 1.39395)
+---------------
+Iteration 7
+==> Iterate to (0.191151 1.40114)
+---------------
+Iteration 8
+==> Iterate to (0.191399 1.40477)
+Final point location: 
+0.191519 1.40655
