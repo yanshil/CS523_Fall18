@@ -18,6 +18,9 @@ add_executable(${PROJECT_NAME} main.cpp)
 add_library(RigidBody RigidBody.cpp)
 target_link_libraries(${PROJECT_NAME} RigidBody)
 
+add_library(Contact Contact.cpp)
+target_link_libraries(${PROJECT_NAME} Contact)
+
 ############################################################
 #
 #	Libraries
@@ -26,12 +29,7 @@ target_link_libraries(${PROJECT_NAME} RigidBody)
 
 ### Eigen:
 
-#find_package (Eigen3 3.3 NO_MODULE) 
-#if (TARGET Eigen3::Eigen)
-    # Use the imported target
-    include_directories(include)
-#    include_directories(${CMAKE_SOURCE_DIR})
-# endif (TARGET Eigen3::Eigen)
+include_directories(include)
 
 
 ## Build-in Libraries
