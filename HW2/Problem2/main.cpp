@@ -39,9 +39,10 @@ GLfloat groundz; /* The z axis of the ground plane */
 //------------------------------------------------
 
 // Light Control
-GLfloat light_ambient[] = {0.0, 0.0, 0.0, 1.0};
-GLfloat light_diffuse[] = {0.9451, 0.3647, 0.3961, 1.0}; /* x, y, z, w */
-GLfloat light_position[] = {1.0, 1.0, 0.0, 10.0};       /* Infinite light location. */
+GLfloat light_ambient[] = {0.25, 0.20725, 0.20725, 1.0};
+GLfloat light_diffuse[] = {1, 0.829, 0.829, 1.0}; /* x, y, z, w */
+GLfloat light_specular[] = {0.296648, 0.296648, 0.296648, 1.0};
+GLfloat light_position[] = {0.0, 0.0, 0.0, 10.0}; /* Infinite light location. */
 
 //-------------------------------------------------
 
@@ -86,6 +87,7 @@ void init(void)
     glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0); // Diffuse Light
@@ -112,7 +114,7 @@ void init(void)
 void drawBox()
 {
     int i;
-
+    glColor3f(1.0f, 1.0f, 1.0f);
     for (i = 0; i < 6; i++)
     {
         glBegin(GL_QUADS);
@@ -123,10 +125,12 @@ void drawBox()
         glVertex3fv(&v[faces[i][3]][0]);
         glEnd();
     }
+
 }
 
 void drawPlane()
 {
+    glColor3f(0.8, 0.8, 0.8);
     glBegin(GL_QUADS);
     glVertex3f(-100, -100, groundz);
     glVertex3f(-100, 100, groundz);
