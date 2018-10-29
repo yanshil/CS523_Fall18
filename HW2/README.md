@@ -34,8 +34,7 @@
 ./Output/Problem1_ellipsolid.out
 ./Output/Problem1_cubic.out
 
-./Output/Problem2_vedio1.mp4
-./Output/Problem2_vedio2.mp4
+./Output/Problem2_vedio.mp4
 ```
 
 ## Problem 1
