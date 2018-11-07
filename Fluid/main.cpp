@@ -10,9 +10,12 @@ using namespace Nova;
 
 using T_INDEX = Vector<int, d>;
 
-
 int main(int argc, char **argv)
 {
+    enum
+    {
+        d = 2
+    };
 
     /* Customize Grid Size with Parsing Arguments */
     Parse_Args parse_args;

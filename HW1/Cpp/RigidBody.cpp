@@ -29,7 +29,7 @@ RigidBody::~RigidBody() {
 }
 
 void RigidBody::initialize() {
-	v << 0, 0, 10;
+	v << 0, 1, 10;
 	omega << 0.05, 0.02, 0.01;
 
 	for (int i = 0; i < particleNum; i++)
@@ -77,13 +77,15 @@ void RigidBody::update(double h) {
 	I = R * Ibody * R.transpose();
 
 	// Update Torque
-	torque << 0,0,0; 
+	torque << 0,0,0;
 	for (int i = 0; i < particleNum; i++)
 	{
 		torque += vertices[i].ri.cross(vertices[i].fi);
 	}
 	L += torque * h;
 	omega = I.inverse() * L;
+
+    std::cout<<"omega="<<omega<<std::endl;
 
 	// Update ri!
 	for (int j = 0; j < particleNum; j++)

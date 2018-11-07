@@ -1,75 +1,91 @@
-#include <nova/Tools/Grids/Grid.h>
+# include <nova/Tools/Grids/Grid.h>
 
 using namespace Nova;
 
-enum
-{
-	d = 2
-};
+enum{d = 2};
+
 typedef float T;
 typedef Vector<T, d> TV;
 typedef Vector<int, d> T_INDEX;
 
-/* Auxiliary Function: Get exact offset for Column-based 1D array */
-int offset(const T_INDEX &index, const T_INDEX &counts)
-{
-
-	int os = index[1] * counts[0] + index[0];
-	if (d == 3)
-		os += index[2] * counts[0] * counts[1];
-	return os;
-
-	// return (z * xSize * ySize) + (y * xSize) + x;
-}
-
-int offset_xyz(int x, int y, int z, const T_INDEX &counts)
-{
-
-	int os = y * counts[0] + x;
-	if (d == 3)
-		os += z * counts[0] * counts[1];
-	return os;
-
-	// return (z * xSize * ySize) + (y * xSize) + x;
-}
+/*!
+ * Auxiliary Function: Get exact offset for Column-based 1D array 
+ * return (z * xSize * ySize) + (y * xSize) + x;
+ */
+int index2offset(const T_INDEX &index, const T_INDEX &counts);
 
 class FluidQuantity
 {
   public:
-	float *Phi;		// Array of num_cell
-	float *Phi_new; // Array of num_cell
-	int faceIndicator;	// -1 for Scalar
-	Grid<T, d> *grid;
+    float *Phi;     // Array of num_cell
+    float *Phi_new; // Array of num_cell
+    int axis;       // -1 for Scalar. 0, 1, 2 to indicate faces axis
+    int number_of_ghost_cells;
+    Grid<T, d> *grid;
 
-	FluidQuantity();
-	FluidQuantity(Grid<T, d> grid, int faceIndicator);
-	~FluidQuantity();
+    FluidQuantity();
+    FluidQuantity(Grid<T, d> &grid, int axis);
+    ~FluidQuantity();
 
-	/* Linear Interpolate */
-	float linter(float a, float b, float x)
-	{
-		return (1.0 - x) * a + x * b;
-	}
+    // ********************************************
 
-	double at(T_INDEX &index)
-	{
-		return Phi[offset(index, (*grid).counts)];
-	}
+    /*!
+     * 1D Linear Interpolate etween a and b for x in (0, 1)
+     */
+    float linter(float a, float b, float x)
+    {
+        return (1.0 - x) * a + x * b;
+    }
 
-	double at_(int x, int y, int z)
-	{
-		return Phi[offset_xyz(x, y, z, (*grid).counts)];
-	}
+    /*!
+     * Linear Interpolator for TV{i, j, k} on grid
+     * Coordinates will be clamped to lie in simulation domain
+     */
+    float linter(TV &location)
+    {
+        T_INDEX clamp_index;
+        clamp_index = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
 
-	/* Compute Velocity */
-	TV computeVelocity(T_INDEX &index, FluidQuantity *FluidVelocity[d]);
-	void applyAdvection()
-	{
-		std::swap(Phi, Phi_new);
-	}
+        TV offset = location - (TV)clamp_index;
 
-	/*  */
-	void advection();
-	void projection();
-	void update();
+        for (size_t i = 0; i < d; i++)
+        {
+            offset[i] = offset[i] * (*grid).one_over_dX[i];
+        }
+
+        float c00, c10, c01, c11;
+
+        this-> at(clamp_index);
+    }
+
+    /*!
+     * Read access in the quantity field
+     */
+    float at(T_INDEX &index) const
+    {
+        return Phi[index2offset(index, (*grid).counts)];
+    }
+
+    /*!
+     * Read & write access in the quantity field
+     */
+    float &at(T_INDEX &index)
+    {
+        return Phi[index2offset(index, (*grid).counts)];
+    }
+
+    /* Compute Velocity */
+    TV computeVelocity(T_INDEX &index, FluidQuantity *FluidVelocity[d]);
+    TV traceBack(TV &location, float timestep, TV &velocity);
+
+    void flip()
+    {
+        std::swap(Phi, Phi_new);
+    }
+
+    /*  */
+    void advection(double timestep, FluidQuantity *FluidVelocity[d]);
+    void projection();
+    void update();
 };
+

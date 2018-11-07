@@ -1,4 +1,5 @@
-#include <nova/Tools/Grids/Grid.h>
+# include <nova/Tools/Grids/Grid.h>
+# include "FluidQuantity.h"
 
 using namespace Nova;
 
@@ -24,28 +25,48 @@ int offset(const T_INDEX &index, const T_INDEX &counts)
 
 main(int argc, char const *argv[])
 {
-    // T_INDEX v = T_INDEX(1);
-    // std::cout<<v<<std::endl;
-    // T_INDEX counts = T_INDEX(5);
-    // std::cout<<offset(v, counts)<<std::endl;
 
-    Vector<int, 2> v1 = Vector<int, 2>{0, -1};  // For Face Indicator == 0
-    Vector<int, 2> v2 = Vector<int, 2>{0, 1};   // For The update velocity
-    Vector<int, 1> v3 = Vector<int, 1>{0};  // For the rest
+    
+    if (true) {
+        FluidQuantity u;
+    }
+    
 
-    int faceIndicator = 0;
-    int _ii_ = 1;
-    int rest_index = 3 - _ii_ -faceIndicator;
-
-    for (int i = 0; i < v1.Size(); i++)
+    if (false)
     {
+        T_INDEX v = T_INDEX(1);
+        std::cout << v << std::endl;
+        T_INDEX counts = T_INDEX(5);
+        std::cout << offset(v, counts) << std::endl;
+    }
 
-        for (int j = 0; j < v2.Size(); j++)
+    if (false)
+    {
+        Vector<int, 2> v_FI = Vector<int, 2>{0, -1}; // For Face Indicator == 0
+        Vector<int, 2> v_UV = Vector<int, 2>{0, 1};  // For The update velocity
+        Vector<int, 1> v3 = Vector<int, 1>{0};       // For the rest
+
+        int faceIndicator = 0;
+        int uv = 1;
+        int rest_index;
+        if (d == 3)
+            rest_index = 3 - uv - faceIndicator;
+
+        TV offset = TV(0);
+
+        for (int i = 0; i < 2; i++)
         {
 
-            for (int k = 0; k < v3.Size(); k++)
+            for (int j = 0; j < 2; j++)
             {
-                std::cout << v1(i) << ", " << v2(j) << ", " << v3(k) << std::endl;
+                offset[faceIndicator] = v_FI[i];
+                offset[uv] = v_UV[j];
+                if (d == 3)
+                {
+                    offset[rest_index] = 0;
+                }
+
+                std::cout << offset << std::endl;
             }
         }
     }
