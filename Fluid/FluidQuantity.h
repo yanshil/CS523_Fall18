@@ -1,18 +1,21 @@
-# include <nova/Tools/Grids/Grid.h>
+#include <nova/Tools/Grids/Grid.h>
 
 using namespace Nova;
 
-enum{d = 2};
+enum
+{
+    d = 2
+};
 
 typedef float T;
 typedef Vector<T, d> TV;
 typedef Vector<int, d> T_INDEX;
 
-/*!
- * Auxiliary Function: Get exact offset for Column-based 1D array 
- * return (z * xSize * ySize) + (y * xSize) + x;
- */
-int index2offset(const T_INDEX &index, const T_INDEX &counts);
+// /*!
+//  * Auxiliary Function: Get exact offset for Column-based 1D array
+//  * return (z * xSize * ySize) + (y * xSize) + x;
+//  */
+// int index2offset(const T_INDEX &index, const T_INDEX &counts);
 
 class FluidQuantity
 {
@@ -38,41 +41,41 @@ class FluidQuantity
     }
 
     /*!
+ * Auxiliary Function: Get exact offset for Column-based 1D array
+ * return (z * xSize * ySize) + (y * xSize) + x;
+ */
+    int index2offset(const T_INDEX &index)
+    {
+
+        int os = index[1] * (*grid).counts[0] + index[0];
+        if (d == 3)
+            os += index[2] * (*grid).counts[0] * (*grid).counts[1];
+        return os;
+    }
+
+    /*!
      * Linear Interpolator for TV{i, j, k} on grid
      * Coordinates will be clamped to lie in simulation domain
      */
-    float linter(TV &location)
-    {
-        T_INDEX clamp_index;
-        clamp_index = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
-
-        TV offset = location - (TV)clamp_index;
-
-        for (size_t i = 0; i < d; i++)
-        {
-            offset[i] = offset[i] * (*grid).one_over_dX[i];
-        }
-
-        float c00, c10, c01, c11;
-
-        this-> at(clamp_index);
-    }
+    float linter(TV &location);
 
     /*!
      * Read access in the quantity field
      */
-    float at(T_INDEX &index) const
+    float at(const T_INDEX &index)
     {
-        return Phi[index2offset(index, (*grid).counts)];
+        return Phi[index2offset(index)];
     }
 
     /*!
      * Read & write access in the quantity field
      */
-    float &at(T_INDEX &index)
+    float &modify_at(const T_INDEX &index)
     {
-        return Phi[index2offset(index, (*grid).counts)];
+        return Phi[index2offset(index)];
     }
+
+    // a.modify_at(1) = ...;
 
     /* Compute Velocity */
     TV computeVelocity(T_INDEX &index, FluidQuantity *FluidVelocity[d]);
@@ -84,8 +87,7 @@ class FluidQuantity
     }
 
     /*  */
-    void advection(double timestep, FluidQuantity *FluidVelocity[d]);
+    void advection(float timestep, FluidQuantity *FluidVelocity[d]);
     void projection();
     void update();
 };
-
