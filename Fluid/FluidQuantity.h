@@ -60,7 +60,7 @@ class FluidQuantity
     float linter(TV &location);
 
     /*!
-     * Read access in the quantity field
+     * Read access in the quantity field for Phi
      */
     float at(const T_INDEX &index)
     {
@@ -68,11 +68,11 @@ class FluidQuantity
     }
 
     /*!
-     * Read & write access in the quantity field
+     * Write access in the quantity field for Phi_new
      */
     float &modify_at(const T_INDEX &index)
     {
-        return Phi[index2offset(index)];
+        return Phi_new[index2offset(index)];
     }
 
     // a.modify_at(1) = ...;

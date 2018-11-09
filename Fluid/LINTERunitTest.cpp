@@ -93,7 +93,5 @@ main(int argc, char *argv[])
     Grid<T, d> grid(counts, Range<T, d>::Unit_Box());
     // File_Utilities::Write_To_File(output_directory+"/grid.grid",grid);
 
-
-
     return 0;
 }

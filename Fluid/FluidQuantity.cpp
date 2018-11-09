@@ -115,7 +115,7 @@ float FluidQuantity::linter(TV &location)
     c110 = Next_Cell(0, c010);
 
     T_INDEX c001, c101, c011, c111;
-    if(d == 3)
+    if (d == 3)
     {
         c001 = Next_Cell(2, c000);
         c101 = Next_Cell(2, c100);
@@ -127,7 +127,7 @@ float FluidQuantity::linter(TV &location)
     float px10 = linter(at(c010), at(c110), offset[0]);
     float py0 = linter(px00, px10, offset[1]);
 
-    if(d==2)
+    if (d == 2)
         return py0;
     else
     {
@@ -139,20 +139,24 @@ float FluidQuantity::linter(TV &location)
 
         return pz;
     }
-
 }
 
-
-void FluidQuantity::advection(float timestep, FluidQuantity * velocityField[d])
+void FluidQuantity::advection(float timestep, FluidQuantity *velocityField[d])
 {
-    // for all cell in domain with &index
-    //
+
+    // For all Cells in the domain
     T_INDEX index = T_INDEX(1);
+    TV location;
+
+    if (axis != -1)
+        location = (*grid).Center(index);
+    else
+        location = (*grid).Face(axis, index);
 
     TV velocity = computeVelocity(index, velocityField);
-    TV location;
+
     TV location_traceback = traceBack(location, timestep, velocity);
-    Phi_new[index2offset(index)] = linter(location_traceback);
+    modify_at(index) = linter(location_traceback);
 }
 
 /*!
@@ -176,14 +180,3 @@ T_INDEX Previous_Cell(const int axis, const T_INDEX &index)
     return shifted_index;
 }
 
-// /*!
-//  * Auxiliary Function: Get exact offset for Column-based 1D array
-//  * return (z * xSize * ySize) + (y * xSize) + x;
-//  */
-// int index2offset(const T_INDEX &index, const T_INDEX &counts)
-// {
-//     int os = index[1] * counts[0] + index[0];
-//     if (d == 3)
-//         os += index[2] * counts[0] * counts[1];
-//     return os;
-// }
