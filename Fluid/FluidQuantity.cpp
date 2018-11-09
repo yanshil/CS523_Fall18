@@ -30,11 +30,7 @@ TV FluidQuantity::computeVelocity(T_INDEX &index, FluidQuantity *FluidVelocity[d
     {
         for (int i = 0; i < d; i++)
         {
-            // T_INDEX next_cell_index(index);
-            // T_INDEX next_cell_index2(Next_Cell(i, next_cell_index));
-
             velocity[i] += 0.5 * FluidVelocity[i]->at(index);
-            // velocity[i] += 0.5 * FluidVelocity[i]->at(next_cell_index2);
             velocity[i] += 0.5 * FluidVelocity[i]->at(Next_Cell(i, index));
         }
     }
@@ -46,19 +42,10 @@ TV FluidQuantity::computeVelocity(T_INDEX &index, FluidQuantity *FluidVelocity[d
                 velocity[i] = FluidVelocity[i]->at(index);
             else
             {
-                T_INDEX next_cell_index_onI(index);
-                T_INDEX next_cell_index_onI2(Next_Cell(i, next_cell_index_onI));
-
-                T_INDEX previous_cell_index_onAxis(index);
-                T_INDEX previous_cell_index_onAxis2(Previous_Cell(axis, previous_cell_index_onAxis));
-
-                T_INDEX next_pre_index(previous_cell_index_onAxis);
-                T_INDEX next_pre_index2(Next_Cell(i, next_pre_index));
-
                 velocity[i] += 0.25 * FluidVelocity[i]->at(index);
-                velocity[i] += 0.25 * FluidVelocity[i]->at(next_cell_index_onI2);
-                velocity[i] += 0.25 * FluidVelocity[i]->at(previous_cell_index_onAxis2);
-                velocity[i] += 0.25 * FluidVelocity[i]->at(next_pre_index2);
+                velocity[i] += 0.25 * FluidVelocity[i]->at(Next_Cell(i, index));
+                velocity[i] += 0.25 * FluidVelocity[i]->at(Previous_Cell(axis, index));
+                velocity[i] += 0.25 * FluidVelocity[i]->at(Next_Cell(i, Previous_Cell(axis, index) ) );
             }
         }
     }
