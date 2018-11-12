@@ -10,15 +10,17 @@ using namespace Nova;
 
 using T_INDEX = Vector<int, d>;
 
-int main(int argc, char **argv)
-{
+// -----------Parse Argument -------------------
 
+
+T_INDEX parseArgument(int argc, char *argv[])
+{
     /* Customize Grid Size with Parsing Arguments */
     Parse_Args parse_args;
     if (d == 2)
-        parse_args.Add_Vector_2D_Argument("-size", Vector<double, 2>(500), "", "Grid resolution");
+        parse_args.Add_Vector_2D_Argument("-size", Vector<double, 2>(16), "", "Grid resolution");
     else
-        parse_args.Add_Vector_3D_Argument("-size", Vector<double, 3>(500), "", "Grid resolution");
+        parse_args.Add_Vector_3D_Argument("-size", Vector<double, 3>(16), "", "Grid resolution");
     parse_args.Add_String_Argument("-o", ".", "", "Output directory");
     parse_args.Parse(argc, argv);
 
@@ -36,11 +38,26 @@ int main(int argc, char **argv)
             counts(v) = counts_3d(v);
     }
     std::string output_directory = parse_args.Get_String_Value("-o");
-
+    
     // Log::cout << "Counts: " << counts << std::endl;
 
+    return counts;
+}
+
+// -------------------------------------------------
+
+int main(int argc, char **argv)
+{
+    T_INDEX counts = parseArgument(argc, argv);
+
     Grid<T, d> grid(counts, Range<T, d>::Unit_Box());
-    // File_Utilities::Write_To_File(output_directory+"/grid.grid",grid);
+
+    double density = 0.1;
+    FluidSolver *solver = new FluidSolver(grid, density);
+
+    
+    
+
 
     return 0;
 }

@@ -7,7 +7,7 @@ using namespace Nova;
 
 enum
 {
-    d = 3
+    d = 2
 };
 
 typedef float T;
@@ -19,7 +19,7 @@ int number_of_ghost_cells = 0;
 
 void calculateRHS(Grid<T, d> &grid);
 
-main(int argc, char *argv[])
+T_INDEX parseArgument(int argc, char *argv[])
 {
     /* Customize Grid Size with Parsing Arguments */
     Parse_Args parse_args;
@@ -44,13 +44,20 @@ main(int argc, char *argv[])
             counts(v) = counts_3d(v);
     }
     std::string output_directory = parse_args.Get_String_Value("-o");
-
+    
     // Log::cout << "Counts: " << counts << std::endl;
+
+    return counts;
+}
+
+main(int argc, char *argv[])
+{    
+    T_INDEX counts = parseArgument(argc, argv);
 
     Grid<T, d> grid(counts, Range<T, d>::Unit_Box());
 
     calculateRHS(grid);
-    
+
     return 0;
 }
 
@@ -58,10 +65,9 @@ void calculateRHS(Grid<T, d> &grid)
 {
     T_INDEX currIndex;
 
-    for(Range_Iterator<d> iterator(Range<int,d>(T_INDEX(1),(grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        std::cout<<currIndex<<std::endl;
+        std::cout << currIndex << std::endl;
     }
-
 }

@@ -36,11 +36,11 @@ double slope(double b, double a, double delta)
 
 // ------------------------------------------------------
 
-
 // ------------------ Fluid Quantity-------------------
 
 FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis)
 {
+    std::cout<<"Correct Constructor!"<<std::endl;
 
     Phi = new double[grid.counts.Product()];
     Phi_new = new double[grid.counts.Product()];
@@ -180,7 +180,6 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
     new_at(index) = linter(location_traceback);
 }
 
-
 // /** Do Projection for given cell
 //  *
 //  */
@@ -210,6 +209,22 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
 // -------- Fluid Solver Implementation -----------------------
 
+void FluidSolver::advection(double timestep)
+{
+    T_INDEX currIndex;
+
+    // For Each Cell in Grid
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+    {
+        // For each Fluid Velocity
+        for (int i = 0; i < d; i++)
+        {
+            // const T_INDEX &index, double timestep, FluidQuantity *velocityField[d]
+            (*velocityField[i]).advect(currIndex, timestep, velocityField);
+        }
+    }
+}
+
 void FluidSolver::calculateRHS()
 {
     T_INDEX currIndex;
@@ -228,6 +243,11 @@ void FluidSolver::calculateRHS()
     }
 }
 
+void FluidSolver::projection()
+{
+    
+}
+
 // TODO: Timestep get involve??
 void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
 {
@@ -242,13 +262,36 @@ void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
     }
 }
 
-void FluidSolver::updateVelocity()
+void FluidSolver::updateVelocity(double timestep)
 {
     T_INDEX currIndex;
 
     // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
-        updateVelocity(currIndex, 0.12);
+        updateVelocity(currIndex, timestep);
     }
+}
+
+void FluidSolver::flip()
+{
+    (*density_field).flip();
+
+    for (int i = 0; i < d; i++)
+    {
+        (*velocityField)[i].flip();
+    }
+}
+
+
+void FluidSolver::update(double timestep)
+{
+    // Set rhs
+    calculateRHS();
+
+    advection(timestep);
+    projection();
+    updateVelocity(timestep);
+    flip();
+
 }

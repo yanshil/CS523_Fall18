@@ -12,12 +12,6 @@ typedef double T;
 typedef Vector<T, d> TV;
 typedef Vector<int, d> T_INDEX;
 
-// /*!
-//  * Auxiliary Function: Get exact offset for Column-based 1D array
-//  * return (z * xSize * ySize) + (y * xSize) + x;
-//  */
-// int index2offset(const T_INDEX &index, const T_INDEX &counts);
-
 //----------Auxiliary Function--------------------
 T_INDEX Next_Cell(const int axis, const T_INDEX &index);
 T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
@@ -33,7 +27,11 @@ class FluidQuantity
     int number_of_ghost_cells;
     Grid<T, d> *grid;
 
-    FluidQuantity();
+    FluidQuantity()
+    {
+        grid = nullptr;
+        std::cout<<"Wrong Constructor!"<<std::endl;
+    }
     FluidQuantity(Grid<T, d> &grid, int axis);
     ~FluidQuantity();
 
@@ -99,20 +97,26 @@ class FluidQuantity
 class FluidSolver
 {
     FluidQuantity *velocityField[d];
-    double density;
-    // FluidQuantity density;
+    FluidQuantity *density_field;
+    
     // FluidQuantity pressure;
     Grid<T, d> *grid;
+
+    double density;
 
     double *rhs;
     double *pressure_solution;
 
+  public:
+    FluidSolver();
     FluidSolver(Grid<T, d> &grid, double density)
     {
+        std::cout<<"Constructor of FluidSolver"<<std::endl;
 
         for (int axis = 0; axis < d; axis++)
-            *velocityField[axis] = FluidQuantity(grid, axis);
+            velocityField[axis] = new FluidQuantity(grid, axis);
 
+        this->density_field = new FluidQuantity(grid, -1);
         this->density = density;
         this->grid = &grid;
 
@@ -125,15 +129,19 @@ class FluidSolver
 
     ~FluidSolver()
     {
-        for (int axis = 0; axis < d; axis++)
-            delete[] velocityField[axis];
+        // for (int axis = 0; axis < d; axis++)
+        //     delete[] velocityField[axis];
 
         delete[] rhs;
         delete[] pressure_solution;
+
+        // TODO: delete density_field;
     }
 
+    void initialize();
+
     /* Advection */
-    void advection();
+    void advection(double timestep);
 
     /* Calculate the RHS of Poisson Equation */
     void calculateRHS();
@@ -143,7 +151,13 @@ class FluidSolver
 
     /* Update velocity with pressure */
     void updateVelocity(T_INDEX &index, double timestep);
-    void updateVelocity();
+    void updateVelocity(double timestep);
+
+    /* UPDATE */
+    void update(double timestep);
+
+    /* Make result visulizable */
+    void flip();
 
     // TODO:
     int index2offset(const T_INDEX &index)
@@ -154,5 +168,4 @@ class FluidSolver
             os += index[2] * (*grid).counts[0] * (*grid).counts[1];
         return os;
     }
-
 };
