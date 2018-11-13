@@ -20,7 +20,7 @@ double density = 1;
 int iterations = 0;
 
 Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
-FluidSolver *solver = new FluidSolver(grid, 0);
+FluidSolver *solver = new FluidSolver(grid, 0, 1);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
@@ -29,7 +29,6 @@ void drawGrid()
 {
     int quadCount = CELLCOUNTS;
     float quadSize = 2.0f / static_cast<float>(quadCount);
-    std::cout<<quadSize<<std::endl;
 
     // Draw a Red 1x1 Square centered at origin
     glBegin(GL_QUADS);           // Each set of 4 vertices form a quad
@@ -45,19 +44,9 @@ void drawGrid()
             float yPos = -1.0 +y * quadSize;
 
             T_INDEX index{x, y};
-            // std::cout<<"iteration = "<<iteration<<std::endl;
             GLfloat color = solver->getRGBcolorDensity(index);
-            // std::cout << "iteration = " << iteration << std::endl;
+            
             glColor3f(color, color, color);
-
-            if ((x + y) % 2 == 0)
-            {
-                glColor3f(1.0f, 1.0f, 1.0f); // White
-            }
-            else
-            {
-                glColor3f(0.0f, 0.0f, 0.0f); // Black
-            }
 
             glVertex2f(xPos, yPos);
             glVertex2f(xPos + quadSize, yPos);
@@ -71,7 +60,7 @@ void drawGrid()
 
 void display()
 {
-    std::cout << "Frame " << iteration << std::endl;
+    // std::cout << "Frame " << iteration << std::endl;
     iteration++;
     //--------------------------------------------------------------
 
@@ -85,8 +74,8 @@ void display()
     //-------------------------------------
 
     // addInflow(T_INDEX &index, double density, TV &velocity);
-    solver->addInflow(T_INDEX{8, 8}, density, TV{0, 0.2});
-    //solver->update(timestep);
+    solver->addInflow(T_INDEX{8, 8}, density, TV{0.2, 0.2});
+    solver->update(timestep);
 }
 
 // Keyboard callback function ( called on keyboard event handling )
@@ -117,7 +106,7 @@ int main(int argc, char **argv)
     glutDisplayFunc(display); // Register display callback handler for window re-paint
 
     glutKeyboardFunc(keyboard); // Register keyboard callback
-    // glutTimerFunc(100, timer, 0);
+    glutTimerFunc(100, timer, 0);
     glutMainLoop(); // Enter the event-processing loop
 
     return 0;

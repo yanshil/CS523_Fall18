@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     unsigned char *image = new unsigned char[32 * 32 * 4];
 
     Grid<T, d> grid(T_INDEX(16), Range<T, d>::Unit_Box());
-    FluidSolver *solver = new FluidSolver(grid, 0);
+    FluidSolver *solver = new FluidSolver(grid, 0, 1);
 
     solver->initialize();
 
@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
         solver->toImage(image);
 
         char path[256];
-        sprintf(path, "Frame%05d.png", iterations++);
+        sprintf(path, "Frame%03d.png", iterations++);
         lodepng_encode32_file(path, image, 32, 32);
     }
-    
+
     return 0;
 }

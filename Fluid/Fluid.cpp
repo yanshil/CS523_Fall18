@@ -2,32 +2,6 @@
 
 using namespace Nova;
 
-T_INDEX Next_Cell(const int axis, const T_INDEX &index);
-T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
-
-// ------------------------------------------------------
-
-/*!
- * Return Index of Next Cell for the given cell index on axis = {0, 1, (,2)}
- */
-T_INDEX Next_Cell(const int axis, const T_INDEX &index)
-{
-    T_INDEX shifted_index(index);
-    shifted_index(axis) += 1;
-    return shifted_index;
-}
-
-/*!
- * Return Index of Previous Cell for the given cell index on axis = {0, 1, (,2)}
- */
-T_INDEX Previous_Cell(const int axis, const T_INDEX &index)
-{
-
-    T_INDEX shifted_index(index);
-    shifted_index(axis) -= 1;
-    return shifted_index;
-}
-
 /* Calculate (b-a) / delta */
 double slope(double b, double a, double delta)
 {
@@ -36,14 +10,16 @@ double slope(double b, double a, double delta)
 
 // ------------------ Fluid Quantity-------------------
 
-FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis)
+FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis, int number_of_ghost_cells)
 {
     std::cout << "Correct Constructor!" << std::endl;
 
-    Phi = new double[grid.counts.Product()];
-    Phi_new = new double[grid.counts.Product()];
+    int size = grid.counts.Product();
+
+    Phi = new double[size];
+    Phi_new = new double[size];
     this->grid = &grid;
-    this->number_of_ghost_cells = 1;
+    this->number_of_ghost_cells = number_of_ghost_cells;
     this->axis = axis;
 }
 
@@ -51,6 +27,14 @@ FluidQuantity::~FluidQuantity()
 {
     delete[] Phi;
     delete[] Phi_new;
+}
+
+void FluidQuantity::fill(double content)
+{
+    for (int i = 0; i < sizeof(Phi); i++)
+    {
+        Phi[i] = content;
+    }
 }
 
 TV FluidQuantity::computeVelocity(const T_INDEX &index, FluidQuantity *velocityField[d])
@@ -80,6 +64,12 @@ TV FluidQuantity::computeVelocity(const T_INDEX &index, FluidQuantity *velocityF
                 velocity[i] += 0.25 * velocityField[i]->at(Next_Cell(i, Previous_Cell(axis, index)));
             }
         }
+    }
+
+    if(velocity.Sum()!= 0)
+    {
+        std::cout<<"index = "<<index<<std::endl;
+        std::cout<<"velocity = "<<velocity<<std::endl;
     }
 }
 
@@ -116,16 +106,18 @@ double FluidQuantity::linter(TV &location)
          * (0.5, 0.5, 0) for face on Z    axis = 2
          */
     TV faceOffset = TV(0.5);
+
     if (axis != -1)
         faceOffset(axis) = 0;
 
-    TV fixed_location = location - faceOffset;
+    // Fix location with Face/Scalar Indicator. True faceOffset = 0.5 * dX for each adjustification.
+    TV fixed_location = location - faceOffset.Dot_Product((*grid).dX);
 
     T_INDEX c000, c100, c010, c110;
     c000 = (*grid).Clamp_To_Cell(fixed_location, number_of_ghost_cells);
 
     /* Project offset to (0, 1) and apply Linear Interpolate */
-    TV offset = fixed_location - (TV)c000;
+    TV offset = fixed_location - (*grid).Node(c000);
 
     for (size_t i = 0; i < d; i++)
     {
@@ -148,6 +140,10 @@ double FluidQuantity::linter(TV &location)
     double px00 = linter(at(c000), at(c100), offset[0]);
     double px10 = linter(at(c010), at(c110), offset[0]);
     double py0 = linter(px00, px10, offset[1]);
+
+    // std::cout << "px00 = " << px00 << "\t";
+    // std::cout << "px10 = " << px10 << "\t";
+    // std::cout << "py0 = " << py0 << std::endl;
 
     if (d == 2)
         return py0;
@@ -174,38 +170,25 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
     TV velocity = computeVelocity(index, velocityField);
 
-    TV location_traceback = traceBack(location, timestep, velocity);
+    TV location_traceback = Clamp_To_Domain(location - timestep * velocity);
+
+    // TV location_traceback = traceBack(location, timestep, velocity);
     new_at(index) = linter(location_traceback);
+
+    double tmp = linter(location_traceback);
+
+    if (tmp != 0)
+    {
+        std::cout << "index = " << index << std::endl;
+        std::cout << "axis = " << axis << std::endl;
+        std::cout << "location = " << location << std::endl;
+        std::cout << "velocity = " << velocity << std::endl;
+        std::cout << "location_traceback = " << location_traceback << std::endl;
+        std::cout << "phi = " << tmp << std::endl;
+    }
 }
 
-// /** Do Projection for given cell
-//  *
-//  */
-// void FluidQuantity::projection(double timestep, T_INDEX &index, FluidQuantity *velocityField[d])
-// {
-//     //[p(i+1, j) - p(i,j)] / dX
-//     double np0, np1, np = 0;
-
-//     for (int i = 0; i < d; i++)
-//     {
-//         np0 = slope(new_at(Next_Cell(i, index)), new_at(index), (*grid).dX(i));
-//         np1 = slope(new_at(index), new_at(Previous_Cell(i, index)), (*grid).dX(i));
-//         np += slope(np0, np1, (*grid).dX(i));
-//     }
-
-//     double tildep = timestep * np;
-
-//     double rhs = 0;
-
-//     for (int i = 0; i < d; i++)
-//     {
-//         // [u_{i+1/2, j} - u_{i-1/2, j}] / Delta x
-//         rhs += slope((*velocityField[i]).new_at(Next_Cell(i, index)),
-//                      (*velocityField[i]).new_at(index), (*grid).dX(i));
-//     }
-// }
-
-// -------- Fluid Solver Implementation -----------------------
+// -----------------------
 
 double FluidSolver::getRGBcolorDensity(T_INDEX &index)
 {
@@ -215,19 +198,14 @@ double FluidSolver::getRGBcolorDensity(T_INDEX &index)
 // TODO
 void FluidSolver::initialize()
 {
-    T_INDEX currIndex;
-
-    // For Each Cell in Grid
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-    {
-        currIndex = T_INDEX() + iterator.Index();
-        (*density_field).at(currIndex) = 0;
-        // For each Fluid Velocity
-        for (int i = 0; i < d; i++)
-        {
-            (*velocityField[i]).at(currIndex) = 0;
-        }
-    }
+    // for (int i = 0; i < d; i++)
+    // {
+    //     (*velocityField[i]).fill(0.5);
+    // }
+    (*velocityField[0]).fill(0);
+    (*velocityField[1]).fill(0.1);
+    
+    (*density_field).fill(0);
 }
 
 void FluidSolver::advection(double timestep)
@@ -241,7 +219,6 @@ void FluidSolver::advection(double timestep)
         for (int i = 0; i < d; i++)
         {
             currIndex = T_INDEX() + iterator.Index();
-            // const T_INDEX &index, double timestep, FluidQuantity *velocityField[d]
             (*velocityField[i]).advect(currIndex, timestep, velocityField);
         }
     }
@@ -283,9 +260,6 @@ void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
 {
     for (int i = 0; i < d; i++)
     {
-        // p.at(index) - p.at(PreviousCell(i, index)) / DeltaX(i)
-        // double np = slope(pressure_solution[index2offset(index)],
-        //                   pressure_solution[index2offset(Previous_Cell(i, index))], (*grid).dX(i));
         double np = nablapOnI(index, i);
         (*velocityField[i]).new_at(index) -= np * timestep;
     }
@@ -316,7 +290,7 @@ void FluidSolver::flip()
 void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV &velocity)
 {
 
-    std::cout<<"Try to add in flow"<<std::endl;
+    // std::cout << "Try to add in flow" << std::endl;
 
     (*density_field).at(index) = density;
 
@@ -324,27 +298,18 @@ void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV
     {
         (*velocityField[i]).at(index) = velocity[i];
     }
-
-    std::cout<<"index!!"<<index<<std::endl;
-    std::cout<<"Flow Density!!"<<(*density_field).at(index)<<std::endl;
 }
 
 void FluidSolver::update(double timestep)
 {
     // Set rhs
     // calculateRHS();
-    // std::cout << "grid.domain.count" << (*grid).counts << std::endl;
-    // std::cout << "grid.domain.min" << (*grid).domain.min_corner << std::endl;
-    // std::cout << "grid.domain.max" << (*grid).domain.max_corner << std::endl;
 
-    std::cout<<"----Advection----"<<std::endl;
     advection(timestep);
-    std::cout<<"----Projection----"<<std::endl;
+
     projection();
-    std::cout<<"----UpdateV----"<<std::endl;
+
     updateVelocity(timestep);
-    std::cout<<"----Flip----"<<std::endl;
+
     flip();
-    std::cout<<"----Finish----"<<std::endl;
-    // std::cout<<(*density_field).at(index)<<std::endl;
 }
