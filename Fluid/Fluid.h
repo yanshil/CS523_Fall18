@@ -71,6 +71,23 @@ class FluidQuantity
     double linter(TV &location);
 
     //----------Auxiliary Function--------------------
+    void printPhi()
+    {
+        std::cout<<"Phi: ";
+
+        // std::cout<<(*grid).counts.Product()<<std::endl;
+
+        // std::cout<<sizeof(Phi) / sizeof(double) <<std::endl;
+        
+        for(int i = 0; i < (*grid).counts.Product(); i++)
+        {
+            std::cout<<Phi[i]<<", ";
+        }
+
+        std::cout<<std::endl;
+        
+    }
+
     T_INDEX Next_Cell(const int axis, const T_INDEX &index)
     {
         return (*grid).Next_Cell(axis, index);

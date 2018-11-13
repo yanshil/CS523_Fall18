@@ -15,7 +15,7 @@ using T_INDEX = Vector<int, d>;
 int main(int argc, char *argv[])
 {
 
-    double timestep = 0.12;
+    double timestep = 0.01;
     double density = 1;
 
     double time = 0.0;

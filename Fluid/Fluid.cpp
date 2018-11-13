@@ -31,7 +31,7 @@ FluidQuantity::~FluidQuantity()
 
 void FluidQuantity::fill(double content)
 {
-    for (int i = 0; i < sizeof(Phi); i++)
+    for (int i = 0; i < (*grid).counts.Product(); i++)
     {
         Phi[i] = content;
     }
@@ -66,11 +66,7 @@ TV FluidQuantity::computeVelocity(const T_INDEX &index, FluidQuantity *velocityF
         }
     }
 
-    if(velocity.Sum()!= 0)
-    {
-        std::cout<<"index = "<<index<<std::endl;
-        std::cout<<"velocity = "<<velocity<<std::endl;
-    }
+    return velocity;
 }
 
 TV FluidQuantity::Clamp_To_Domain(const TV &location)
@@ -119,7 +115,7 @@ double FluidQuantity::linter(TV &location)
     /* Project offset to (0, 1) and apply Linear Interpolate */
     TV offset = fixed_location - (*grid).Node(c000);
 
-    for (size_t i = 0; i < d; i++)
+    for (int i = 0; i < d; i++)
     {
         offset[i] = offset[i] * (*grid).one_over_dX[i];
     }
@@ -161,14 +157,9 @@ double FluidQuantity::linter(TV &location)
 
 void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity *velocityField[d])
 {
-    TV location;
-
-    if (axis != -1)
-        location = (*grid).Center(index);
-    else
-        location = (*grid).Face(axis, index);
-
     TV velocity = computeVelocity(index, velocityField);
+
+    TV location = (axis == -1)?(*grid).Center(index):(*grid).Face(axis, index);
 
     TV location_traceback = Clamp_To_Domain(location - timestep * velocity);
 
@@ -177,15 +168,16 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
     double tmp = linter(location_traceback);
 
-    if (tmp != 0)
-    {
-        std::cout << "index = " << index << std::endl;
-        std::cout << "axis = " << axis << std::endl;
-        std::cout << "location = " << location << std::endl;
-        std::cout << "velocity = " << velocity << std::endl;
-        std::cout << "location_traceback = " << location_traceback << std::endl;
-        std::cout << "phi = " << tmp << std::endl;
-    }
+    // if (tmp != 0)
+    // {
+    //     std::cout << "index = " << index << std::endl;
+    //     std::cout << "axis = " << axis << std::endl;
+    //     std::cout << "location = " << location << std::endl;
+    //     std::cout << "velocity = " << velocity << std::endl;
+    //     std::cout << "location_traceback = " << location_traceback << std::endl;
+    //     std::cout << "phi = " << tmp << std::endl;
+    //     std::cout << "---------------- " << std::endl;
+    // }
 }
 
 // -----------------------
@@ -204,7 +196,7 @@ void FluidSolver::initialize()
     // }
     (*velocityField[0]).fill(0);
     (*velocityField[1]).fill(0.1);
-    
+
     (*density_field).fill(0);
 }
 

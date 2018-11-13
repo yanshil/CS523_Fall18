@@ -5,6 +5,7 @@ add_executable(fluidsimulator
     #lodepng.cpp
     #UnitTest_Range_Iterator.cpp
     #unitTest_Grid.cpp
+    #unitTest_computeVelocity.cpp
 )
 
 target_link_libraries(fluidsimulator
