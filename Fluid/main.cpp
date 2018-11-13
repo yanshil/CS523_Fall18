@@ -52,12 +52,24 @@ int main(int argc, char **argv)
 
     Grid<T, d> grid(counts, Range<T, d>::Unit_Box());
 
-    double density = 0.1;
+    double timestep = 0.12;
+    double density = 0.5;
+
+
     FluidSolver *solver = new FluidSolver(grid, density);
 
-    
-    
+    double time = 0.0;
+    int iterations = 0;
 
+    solver->initialize();
 
+    while(time < 8)
+    {
+        // addInflow(T_INDEX &index, double density, TV &velocity);
+        solver->addInflow(T_INDEX(1), density, TV{0,0.2});
+        solver->update(timestep);
+        time += timestep;
+    }
+    
     return 0;
 }

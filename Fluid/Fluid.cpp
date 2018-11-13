@@ -40,7 +40,7 @@ double slope(double b, double a, double delta)
 
 FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis)
 {
-    std::cout<<"Correct Constructor!"<<std::endl;
+    std::cout << "Correct Constructor!" << std::endl;
 
     Phi = new double[grid.counts.Product()];
     Phi_new = new double[grid.counts.Product()];
@@ -209,6 +209,23 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
 // -------- Fluid Solver Implementation -----------------------
 
+// TODO
+void FluidSolver::initialize()
+{
+    T_INDEX currIndex;
+
+    // For Each Cell in Grid
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+    {
+        (*density_field).at(currIndex) = 0;
+        // For each Fluid Velocity
+        for (int i = 0; i < d; i++)
+        {
+            (*velocityField[i]).at(currIndex) = 0;
+        }
+    }
+}
+
 void FluidSolver::advection(double timestep)
 {
     T_INDEX currIndex;
@@ -243,9 +260,17 @@ void FluidSolver::calculateRHS()
     }
 }
 
+// TODO: Currently no projection
 void FluidSolver::projection()
 {
-    
+    T_INDEX currIndex;
+
+    // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        pressure_solution[index2offset(currIndex)] = 0;
+    }
 }
 
 // TODO: Timestep get involve??
@@ -253,11 +278,10 @@ void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
 {
     for (int i = 0; i < d; i++)
     {
-        double np;
         // p.at(index) - p.at(PreviousCell(i, index)) / DeltaX(i)
-        np = slope(pressure_solution[index2offset(index)],
-                   pressure_solution[index2offset(Previous_Cell(i, index))], (*grid).dX(i));
-
+        // double np = slope(pressure_solution[index2offset(index)],
+        //                   pressure_solution[index2offset(Previous_Cell(i, index))], (*grid).dX(i));
+        double np = nablapOnI(index, i);
         (*velocityField[i]).new_at(index) -= np * timestep;
     }
 }
@@ -279,19 +303,33 @@ void FluidSolver::flip()
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField)[i].flip();
+        (*velocityField[i]).flip();
     }
 }
 
+void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV &velocity)
+{
+
+    (*density_field).at(index) += density;
+
+    for (int i = 0; i < d; i++)
+    {
+        (*velocityField[i]).at(index) += velocity[i];
+    }
+}
 
 void FluidSolver::update(double timestep)
 {
     // Set rhs
-    calculateRHS();
+    // calculateRHS();
+    std::cout<<"grid.domain.count"<<(*grid).counts<<std::endl;
+    std::cout<<"grid.domain.min"<<(*grid).domain.min_corner<<std::endl;
+    std::cout<<"grid.domain.max"<<(*grid).domain.max_corner<<std::endl;
 
     advection(timestep);
     projection();
     updateVelocity(timestep);
     flip();
 
+    // std::cout<<(*density_field).at(index)<<std::endl;
 }
