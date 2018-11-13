@@ -46,9 +46,9 @@ class FluidQuantity
     }
 
     /*!
- * Auxiliary Function: Get exact offset for Column-based 1D array
- * return (z * xSize * ySize) + (y * xSize) + x;
- */
+    * Auxiliary Function: Get exact offset for Column-based 1D array
+    * return (z * xSize * ySize) + (y * xSize) + x;
+    */
     int index2offset(const T_INDEX &index)
     {
 
@@ -70,6 +70,15 @@ class FluidQuantity
     double &at(const T_INDEX &index)
     {
         return Phi[index2offset(index)];
+    }
+
+    /*!
+     * RGB color range 0-1 access in the quantity field for Phi
+     * Only Density should call this function
+     */
+    double rgb_at(const T_INDEX &index)
+    {
+        return std::max(std::min(1.0 - at(index), 1.0), 0.0);
     }
 
     /*!
@@ -139,6 +148,8 @@ class FluidSolver
         // TODO: delete density_field;
     }
 
+    double getRGBcolorDensity(T_INDEX &index);
+
     /* Advection */
     void advection(double timestep);
 
@@ -159,6 +170,7 @@ class FluidSolver
     void initialize();
     /* UPDATE */
     void addInflow(const T_INDEX &index, const double density, const TV &velocity);
+
     void update(double timestep);
 
     //-----------------------------------------------
@@ -178,5 +190,20 @@ class FluidSolver
         return (pressure_solution[index2offset(index)] -
                 pressure_solution[index2offset(Previous_Cell(axis, index))]) *
                (*grid).one_over_dX(axis);
+    }
+
+    /* Convert fluid density to RGBA image */
+    void toImage(unsigned char *rgba)
+    {
+        for (int i = 0; i < (*grid).counts.Product(); i++)
+        {
+            int shade = (int)((1.0 - ((*density_field).Phi[i]) * 255.0));
+            shade = std::max(std::min(shade, 255), 0);
+
+            rgba[i * 4 + 0] = shade;
+            rgba[i * 4 + 1] = shade;
+            rgba[i * 4 + 2] = shade;
+            rgba[i * 4 + 3] = 0xFF;
+        }
     }
 };

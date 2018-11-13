@@ -34,8 +34,6 @@ double slope(double b, double a, double delta)
     return (b - a) / delta;
 }
 
-// ------------------------------------------------------
-
 // ------------------ Fluid Quantity-------------------
 
 FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis)
@@ -209,6 +207,11 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
 // -------- Fluid Solver Implementation -----------------------
 
+double FluidSolver::getRGBcolorDensity(T_INDEX &index)
+{
+    return (*density_field).rgb_at(index);
+}
+
 // TODO
 void FluidSolver::initialize()
 {
@@ -217,6 +220,7 @@ void FluidSolver::initialize()
     // For Each Cell in Grid
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
+        currIndex = T_INDEX() + iterator.Index();
         (*density_field).at(currIndex) = 0;
         // For each Fluid Velocity
         for (int i = 0; i < d; i++)
@@ -236,6 +240,7 @@ void FluidSolver::advection(double timestep)
         // For each Fluid Velocity
         for (int i = 0; i < d; i++)
         {
+            currIndex = T_INDEX() + iterator.Index();
             // const T_INDEX &index, double timestep, FluidQuantity *velocityField[d]
             (*velocityField[i]).advect(currIndex, timestep, velocityField);
         }
@@ -293,6 +298,7 @@ void FluidSolver::updateVelocity(double timestep)
     // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
+        currIndex = T_INDEX() + iterator.Index();
         updateVelocity(currIndex, timestep);
     }
 }
@@ -310,26 +316,35 @@ void FluidSolver::flip()
 void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV &velocity)
 {
 
-    (*density_field).at(index) += density;
+    std::cout<<"Try to add in flow"<<std::endl;
+
+    (*density_field).at(index) = density;
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField[i]).at(index) += velocity[i];
+        (*velocityField[i]).at(index) = velocity[i];
     }
+
+    std::cout<<"index!!"<<index<<std::endl;
+    std::cout<<"Flow Density!!"<<(*density_field).at(index)<<std::endl;
 }
 
 void FluidSolver::update(double timestep)
 {
     // Set rhs
     // calculateRHS();
-    std::cout<<"grid.domain.count"<<(*grid).counts<<std::endl;
-    std::cout<<"grid.domain.min"<<(*grid).domain.min_corner<<std::endl;
-    std::cout<<"grid.domain.max"<<(*grid).domain.max_corner<<std::endl;
+    // std::cout << "grid.domain.count" << (*grid).counts << std::endl;
+    // std::cout << "grid.domain.min" << (*grid).domain.min_corner << std::endl;
+    // std::cout << "grid.domain.max" << (*grid).domain.max_corner << std::endl;
 
+    std::cout<<"----Advection----"<<std::endl;
     advection(timestep);
+    std::cout<<"----Projection----"<<std::endl;
     projection();
+    std::cout<<"----UpdateV----"<<std::endl;
     updateVelocity(timestep);
+    std::cout<<"----Flip----"<<std::endl;
     flip();
-
+    std::cout<<"----Finish----"<<std::endl;
     // std::cout<<(*density_field).at(index)<<std::endl;
 }
