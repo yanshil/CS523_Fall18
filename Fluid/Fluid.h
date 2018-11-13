@@ -54,9 +54,7 @@ class FluidQuantity
     int index2offset(const T_INDEX &index)
     {
         // Becuase index in the grid start from (1,1)...
-        T_INDEX tmp_index = T_INDEX(index);
-        tmp_index -= T_INDEX(1);
-        // std::cout<<"tmp_index = "<< tmp_index<<std::endl;
+        T_INDEX tmp_index = index - T_INDEX(1);
 
         int os = tmp_index[1] * (*grid).counts[0] + tmp_index[0];
         if (d == 3)
@@ -73,19 +71,26 @@ class FluidQuantity
     //----------Auxiliary Function--------------------
     void printPhi()
     {
-        std::cout<<"Phi: ";
+        std::cout << "================================\nPhi____: ";
 
-        // std::cout<<(*grid).counts.Product()<<std::endl;
-
-        // std::cout<<sizeof(Phi) / sizeof(double) <<std::endl;
-        
-        for(int i = 0; i < (*grid).counts.Product(); i++)
+        for (int i = 0; i < (*grid).counts.Product(); i++)
         {
-            std::cout<<Phi[i]<<", ";
+            std::cout << Phi[i] << ", ";
         }
 
-        std::cout<<std::endl;
-        
+        std::cout << std::endl;
+    }
+
+    void printPhi_new()
+    {
+        std::cout << "================================\nPhi_new: ";
+
+        for (int i = 0; i < (*grid).counts.Product(); i++)
+        {
+            std::cout << Phi_new[i] << ", ";
+        }
+
+        std::cout << std::endl;
     }
 
     T_INDEX Next_Cell(const int axis, const T_INDEX &index)
@@ -226,9 +231,7 @@ class FluidSolver
     int index2offset(const T_INDEX &index)
     {
         // Becuase index in the grid start from (1,1)...
-        T_INDEX tmp_index;
-        tmp_index -= T_INDEX(1);
-        // std::cout<<"tmp_index = "<< tmp_index<<std::endl;
+        T_INDEX tmp_index = index - T_INDEX(1);
 
         int os = tmp_index[1] * (*grid).counts[0] + tmp_index[0];
         if (d == 3)

@@ -47,11 +47,11 @@ void drawGrid()
             GLfloat color = solver->getRGBcolorDensity(index);
             // Color = (1 - density) scale in (0,1)
 
-            if (color != 1)
-            {
-                std::cout << "Index: " << index << std::endl;
-                std::cout << "Color: " << color << std::endl;
-            }
+            // if (color != 1)
+            // {
+            //     std::cout << "Index: " << index << std::endl;
+            //     std::cout << "Color: " << color << std::endl;
+            // }
 
             glColor3f(color, color, color);
 
@@ -81,7 +81,7 @@ void display()
     //-------------------------------------
 
     // addInflow(T_INDEX &index, double density, TV &velocity);
-    solver->addInflow(T_INDEX{8, 0}, density, TV{0, 0.2});
+    solver->addInflow(T_INDEX{8, 1}, density, TV{0, 0});
     solver->update(timestep);
 }
 

@@ -159,7 +159,7 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 {
     TV velocity = computeVelocity(index, velocityField);
 
-    TV location = (axis == -1)?(*grid).Center(index):(*grid).Face(axis, index);
+    TV location = (axis == -1) ? (*grid).Center(index) : (*grid).Face(axis, index);
 
     TV location_traceback = Clamp_To_Domain(location - timestep * velocity);
 
@@ -190,12 +190,11 @@ double FluidSolver::getRGBcolorDensity(T_INDEX &index)
 // TODO
 void FluidSolver::initialize()
 {
-    // for (int i = 0; i < d; i++)
-    // {
-    //     (*velocityField[i]).fill(0.5);
-    // }
-    (*velocityField[0]).fill(0);
-    (*velocityField[1]).fill(0.1);
+    
+    for(int i = 0; i < d; i++)
+    {
+        (*velocityField[i]).fill(0);
+    }
 
     (*density_field).fill(0);
 }
@@ -208,9 +207,12 @@ void FluidSolver::advection(double timestep)
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         // For each Fluid Velocity
+        currIndex = T_INDEX() + iterator.Index();
+        
+        (*density_field).advect(currIndex, timestep, velocityField);
+
         for (int i = 0; i < d; i++)
         {
-            currIndex = T_INDEX() + iterator.Index();
             (*velocityField[i]).advect(currIndex, timestep, velocityField);
         }
     }
@@ -281,9 +283,6 @@ void FluidSolver::flip()
 
 void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV &velocity)
 {
-
-    // std::cout << "Try to add in flow" << std::endl;
-
     (*density_field).at(index) = density;
 
     for (int i = 0; i < d; i++)
@@ -297,11 +296,14 @@ void FluidSolver::update(double timestep)
     // Set rhs
     // calculateRHS();
 
+    (*density_field).printPhi();
+    (*density_field).printPhi_new();
+
     advection(timestep);
 
     projection();
 
     updateVelocity(timestep);
-
+    
     flip();
 }
