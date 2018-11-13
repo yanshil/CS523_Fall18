@@ -296,8 +296,8 @@ void FluidSolver::update(double timestep)
     // Set rhs
     // calculateRHS();
 
-    (*density_field).printPhi();
-    (*density_field).printPhi_new();
+    (*velocityField[0]).printPhi();
+    // (*density_field).printPhi_new();
 
     advection(timestep);
 

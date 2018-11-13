@@ -62,6 +62,32 @@ class FluidQuantity
         return os;
     }
 
+    T_INDEX offset2index(const int os)
+    {
+        // 3D: os = z * m * n + y * m + x
+        // 2D: os = y * m + x
+        T_INDEX tmp_index = T_INDEX();
+
+        // x <- os mod m
+        tmp_index[0] = os % (*grid).counts[0];
+
+        if (d == 2)
+            // y <- (os - x) / m
+            tmp_index[1] = (os - tmp_index[0]) / (*grid).counts[1];
+        else
+        {
+            // y <- (os - x) mod n
+            tmp_index[1] = (os - tmp_index[0]) % (*grid).counts[1];
+
+            // z <- (os - x - y * m) / (m*n)
+            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * (*grid).counts[0]) / (*grid).counts[0] / (*grid).counts[1];
+        }
+
+        // Becuase index in the grid start from (1,1)...
+        tmp_index += T_INDEX(1);
+        return tmp_index;
+    }
+
     /*!
      * Linear Interpolator for TV{i, j, k} on grid
      * Coordinates will be clamped to lie in simulation domain
@@ -179,13 +205,13 @@ class FluidSolver
 
     ~FluidSolver()
     {
-        // for (int axis = 0; axis < d; axis++)
-        //     delete[] velocityField[axis];
+        for (int axis = 0; axis < d; axis++)
+            delete[] velocityField[axis];
 
-        delete[] rhs;
-        delete[] pressure_solution;
+        delete density_field;
 
-        // TODO: delete density_field;
+        delete rhs;
+        delete pressure_solution;
     }
 
     double getRGBcolorDensity(T_INDEX &index);
@@ -239,25 +265,36 @@ class FluidSolver
         return os;
     }
 
+    T_INDEX offset2index(const int os)
+    {
+        // 3D: os = z * m * n + y * m + x
+        // 2D: os = y * m + x
+        T_INDEX tmp_index = T_INDEX();
+
+        // x <- os mod m
+        tmp_index[0] = os % (*grid).counts[0];
+
+        if (d == 2)
+            // y <- (os - x) / m
+            tmp_index[1] = (os - tmp_index[0]) / (*grid).counts[1];
+        else
+        {
+            // y <- (os - x) mod n
+            tmp_index[1] = (os - tmp_index[0]) % (*grid).counts[1];
+
+            // z <- (os - x - y * m) / (m*n)
+            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * (*grid).counts[0]) / (*grid).counts[0] / (*grid).counts[1];
+        }
+
+        // Becuase index in the grid start from (1,1)...
+        tmp_index += T_INDEX(1);
+        return tmp_index;
+    }
+
     double nablapOnI(T_INDEX &index, int axis)
     {
         return (pressure_solution[index2offset(index)] -
                 pressure_solution[index2offset(Previous_Cell(axis, index))]) *
                (*grid).one_over_dX(axis);
-    }
-
-    /* Convert fluid density to RGBA image */
-    void toImage(unsigned char *rgba)
-    {
-        for (int i = 0; i < (*grid).counts.Product(); i++)
-        {
-            int shade = (int)((1.0 - ((*density_field).Phi[i]) * 255.0));
-            shade = std::max(std::min(shade, 255), 0);
-
-            rgba[i * 4 + 0] = shade;
-            rgba[i * 4 + 1] = shade;
-            rgba[i * 4 + 2] = shade;
-            rgba[i * 4 + 3] = 0xFF;
-        }
     }
 };

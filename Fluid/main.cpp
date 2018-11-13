@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "Fluid.h"
-#define CELLCOUNTS 16
+#define CELLCOUNTS 128
 
 using namespace Nova;
 
