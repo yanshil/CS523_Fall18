@@ -41,7 +41,7 @@ TV FluidQuantity::computeVelocity(const T_INDEX &index, FluidQuantity *velocityF
 {
     TV velocity = TV(0.0);
 
-    // If Scalar
+    // If Scalar (for Density)
     if (axis == -1)
     {
         for (int i = 0; i < d; i++)
@@ -84,11 +84,6 @@ TV FluidQuantity::Clamp_To_Domain(const TV &location)
     return tmp_location;
 }
 
-TV FluidQuantity::traceBack(const TV &location, double timestep, TV &velocity)
-{
-    return Clamp_To_Domain(location - timestep * velocity);
-}
-
 /*!
  * Linear Interpolator for TV{i, j, k} on grid
  * Coordinates will be clamped to lie in simulation domain
@@ -101,58 +96,59 @@ double FluidQuantity::linter(TV &location)
          * (0.5, 0, 0.5) for face on Y    axis = 1
          * (0.5, 0.5, 0) for face on Z    axis = 2
          */
+
+    T_INDEX locationIndex = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
+    TV clocation = (*grid).Node(locationIndex);
+
     TV faceOffset = TV(0.5);
 
     if (axis != -1)
         faceOffset(axis) = 0;
 
-    // Fix location with Face/Scalar Indicator. True faceOffset = 0.5 * dX for each adjustification.
-    TV fixed_location = location - faceOffset.Dot_Product((*grid).dX);
+    faceOffset *= ((*grid).dX);
 
+    // Fix location with Face/Scalar Indicator. True faceOffset = 0.5 * dX for each adjustification.
+    TV fixed_location = location - faceOffset;
+
+    // Find the true linear interpolate cell.
     T_INDEX c000, c100, c010, c110;
     c000 = (*grid).Clamp_To_Cell(fixed_location, number_of_ghost_cells);
 
-    /* Project offset to (0, 1) and apply Linear Interpolate */
-    TV offset = fixed_location - (*grid).Node(c000);
+    TV c000_fixlocation = (axis == -1) ? (*grid).Center(c000) : (*grid).Face(axis, c000);
 
-    for (int i = 0; i < d; i++)
-    {
-        offset[i] = offset[i] * (*grid).one_over_dX[i];
-    }
+    /* Project offset to (0, 1) and apply Linear Interpolate */
+    TV offset = location - c000_fixlocation;
+    offset *= (*grid).one_over_dX;
 
     c100 = Next_Cell(0, c000);
     c010 = Next_Cell(1, c000);
     c110 = Next_Cell(0, c010);
 
-    T_INDEX c001, c101, c011, c111;
-    if (d == 3)
-    {
-        c001 = Next_Cell(2, c000);
-        c101 = Next_Cell(2, c100);
-        c011 = Next_Cell(2, c010);
-        c111 = Next_Cell(2, c110);
-    }
-
     double px00 = linter(at(c000), at(c100), offset[0]);
     double px10 = linter(at(c010), at(c110), offset[0]);
     double py0 = linter(px00, px10, offset[1]);
 
-    // std::cout << "px00 = " << px00 << "\t";
-    // std::cout << "px10 = " << px10 << "\t";
-    // std::cout << "py0 = " << py0 << std::endl;
-
     if (d == 2)
-        return py0;
-    else
     {
-        double px01 = linter(at(c001), at(c101), offset[0]);
-        double px11 = linter(at(c011), at(c111), offset[0]);
-        double py1 = linter(px00, px10, offset[1]);
-
-        double pz = linter(py0, py1, offset[2]);
-
-        return pz;
+        return py0;
     }
+
+    // ----------------- If d = 3----------------------
+
+    T_INDEX c001, c101, c011, c111;
+
+    c001 = Next_Cell(2, c000);
+    c101 = Next_Cell(2, c100);
+    c011 = Next_Cell(2, c010);
+    c111 = Next_Cell(2, c110);
+
+    double px01 = linter(at(c001), at(c101), offset[0]);
+    double px11 = linter(at(c011), at(c111), offset[0]);
+    double py1 = linter(px01, px11, offset[1]);
+
+    double pz = linter(py0, py1, offset[2]);
+
+    return pz;
 }
 
 void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity *velocityField[d])
@@ -163,19 +159,22 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
 
     TV location_traceback = Clamp_To_Domain(location - timestep * velocity);
 
-    // TV location_traceback = traceBack(location, timestep, velocity);
     new_at(index) = linter(location_traceback);
 
-    double tmp = linter(location_traceback);
+    // T_INDEX locationTB = (*grid).Clamp_To_Cell(location_traceback, number_of_ghost_cells);
 
-    // if (tmp != 0)
+    // int tmp2 = (index - locationTB).Sum();
+    // double tmp = linter(location_traceback);
+
+    // if (axis == -1)
     // {
     //     std::cout << "index = " << index << std::endl;
     //     std::cout << "axis = " << axis << std::endl;
     //     std::cout << "location = " << location << std::endl;
     //     std::cout << "velocity = " << velocity << std::endl;
+    //     std::cout << "timestep = " << timestep << std::endl;
     //     std::cout << "location_traceback = " << location_traceback << std::endl;
-    //     std::cout << "phi = " << tmp << std::endl;
+    //     std::cout << "phi_new at = " << tmp << std::endl;
     //     std::cout << "---------------- " << std::endl;
     // }
 }
@@ -190,11 +189,14 @@ double FluidSolver::getRGBcolorDensity(T_INDEX &index)
 // TODO
 void FluidSolver::initialize()
 {
-    
-    for(int i = 0; i < d; i++)
-    {
-        (*velocityField[i]).fill(0);
-    }
+
+    // for (int i = 0; i < d; i++)
+    // {
+    //     (*velocityField[i]).fill(0.5);
+    // }
+    (*velocityField[0]).fill(0);
+    (*velocityField[1]).fill(0.1);
+    // (*velocityField[2]).fill(0.5);
 
     (*density_field).fill(0);
 }
@@ -202,20 +204,47 @@ void FluidSolver::initialize()
 void FluidSolver::advection(double timestep)
 {
     T_INDEX currIndex;
-
-    // For Each Cell in Grid
+    // Advect Density
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
-        // For each Fluid Velocity
         currIndex = T_INDEX() + iterator.Index();
-        
         (*density_field).advect(currIndex, timestep, velocityField);
+    }
 
-        for (int i = 0; i < d; i++)
+    // (*density_field).printPhi_new();
+    // std::cout<<"advect density Finished..." << std::endl;
+    
+
+    // For each Fluid Velocity
+    for (int i = 0; i < d; i++)
+    {
+        // For Each Cell in Grid
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
         {
+            currIndex = T_INDEX() + iterator.Index();
             (*velocityField[i]).advect(currIndex, timestep, velocityField);
         }
     }
+}
+
+// TODO
+void copy_(double src[], double dst[], int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        dst[i] = src[i];
+    }
+}
+
+// TODO
+void printArray(double arr[], int size)
+{
+    std::cout << "----\n";
+    for (int i = 0; i < size; i++)
+    {
+        std::cout << arr[i] << ", ";
+    }
+    std::cout << std::endl;
 }
 
 void FluidSolver::calculateRHS()
@@ -226,26 +255,95 @@ void FluidSolver::calculateRHS()
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        rhs[index2offset(currIndex)] = 0;
+        // rhs[index2offset(currIndex)] = 0;
 
         for (int i = 0; i < d; i++)
         { // [u_{i+1/2, j} - u_{i-1/2, j}] / Delta x
-            rhs[index2offset(currIndex)] += slope((*velocityField[i]).new_at(Next_Cell(i, currIndex)),
-                                                  (*velocityField[i]).new_at(currIndex), (*grid).dX(i));
+            rhs[index2offset(currIndex)] += slope((*velocityField[i]).at(Next_Cell(i, currIndex)),
+                                                  (*velocityField[i]).at(currIndex), (*grid).dX(i));
         }
     }
+}
+
+void FluidSolver::pressure_solution_Jacobi(const T_INDEX &index)
+{
+
+    int os = index2offset(index);
+
+    TV one_over_dXSqure;
+    for (int i = 0; i < d; i++)
+    {
+        one_over_dXSqure[i] = (*grid).one_over_dX[i] * (*grid).one_over_dX[i];
+    }
+
+    // TV one_over_dXSqure = (*grid).one_over_dX.Dot_Product((*grid).one_over_dX);
+
+    int ox_p0, os_n0, os_p1, os_n1;
+    ox_p0 = index2offset(Previous_Cell(0, index));
+    os_n0 = index2offset(Next_Cell(0, index));
+    os_p1 = index2offset(Previous_Cell(1, index));
+    os_n1 = index2offset(Next_Cell(1, index));
+
+    pressure_solution[os] = rhs[os];
+    // Since dX should be the same for x,y,z, only use [0]
+    pressure_solution[os] -= one_over_dXSqure[0] * (pressure_solution_old[ox_p0] +
+                                                    pressure_solution_old[os_n0] +
+                                                    pressure_solution_old[os_p1] +
+                                                    pressure_solution_old[os_n1]);
+
+    if (d == 2)
+    {
+        pressure_solution[os] *= (-4 * one_over_dXSqure[0]);
+    }
+    else
+    {
+        int os_p2, os_n2;
+        os_p2 = index2offset(Previous_Cell(2, index));
+        os_n2 = index2offset(Next_Cell(2, index));
+
+        pressure_solution[os] -= one_over_dXSqure[0] * (pressure_solution_old[os_p2] +
+                                                        pressure_solution_old[os_n2]);
+
+        pressure_solution[os] *= (-6 * one_over_dXSqure[0]);
+    }
+}
+
+double calculate1Norm(double a[], double b[], int size)
+{
+    double max = __DBL_MIN__;
+    for (int i = 0; i < size; i++)
+    {
+        max = std::max(std::abs(a[i] - b[i]), max);
+    }
+
+    return max;
 }
 
 // TODO: Currently no projection
 void FluidSolver::projection()
 {
-    T_INDEX currIndex;
+    int iteration = 1;
 
-    // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+    while (true | iteration <= 1000)
     {
-        currIndex = T_INDEX() + iterator.Index();
-        pressure_solution[index2offset(currIndex)] = 0;
+        T_INDEX currIndex;
+        // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+        {
+            currIndex = T_INDEX() + iterator.Index();
+            pressure_solution_Jacobi(currIndex);
+        }
+
+        double normOne = calculate1Norm(pressure_solution, pressure_solution_old, size);
+        if (normOne < 0.00001)
+        {
+            std::cout << "Max Norm = " << normOne << std::endl;
+            // printArray(pressure_solution_old, size);
+            break;
+        }
+        copy_(pressure_solution_old, pressure_solution, size);
+
+        iteration++;
     }
 }
 
@@ -294,16 +392,29 @@ void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV
 void FluidSolver::update(double timestep)
 {
     // Set rhs
-    // calculateRHS();
+    calculateRHS();
+    // printArray(rhs, size);
 
-    (*velocityField[0]).printPhi();
-    // (*density_field).printPhi_new();
+    // std::cout << "u: " << std::endl;
+    // (*velocityField[0]).printPhi();
+    // std::cout << "v: " << std::endl;
+    // (*velocityField[1]).printPhi();
+    // std::cout << "density: " << std::endl;
+    // (*density_field).printPhi();
 
     advection(timestep);
 
-    projection();
+    // std::cout << "u: " << std::endl;
+    // (*velocityField[0]).printPhi_new();
+    // std::cout << "v: " << std::endl;
+    // // (*velocityField[1]).printPhi_new();
+    // std::cout << "density: " << std::endl;
+    // (*density_field).printPhi_new();
 
+    // projection();
     updateVelocity(timestep);
-    
+
     flip();
+
+    // std::cout << "----- END UPDATE ---" << std::endl;
 }

@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "Fluid.h"
-#define CELLCOUNTS 128
+#define CELLCOUNTS 16
 
 using namespace Nova;
 
@@ -14,7 +14,7 @@ using T_INDEX = Vector<int, d>;
 
 //----------------------------------------------------
 
-double timestep = 0.;
+double timestep = 0.12;
 double density = 1;
 
 int iterations = 0;
@@ -45,13 +45,6 @@ void drawGrid()
 
             T_INDEX index{x, y};
             GLfloat color = solver->getRGBcolorDensity(index);
-            // Color = (1 - density) scale in (0,1)
-
-            // if (color != 1)
-            // {
-            //     std::cout << "Index: " << index << std::endl;
-            //     std::cout << "Color: " << color << std::endl;
-            // }
 
             glColor3f(color, color, color);
 
@@ -81,7 +74,7 @@ void display()
     //-------------------------------------
 
     // addInflow(T_INDEX &index, double density, TV &velocity);
-    solver->addInflow(T_INDEX{8, 1}, density, TV{0, 0});
+    solver->addInflow(T_INDEX{8, 1}, density, TV{0, 1});
     solver->update(timestep);
 }
 

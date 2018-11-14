@@ -97,26 +97,34 @@ class FluidQuantity
     //----------Auxiliary Function--------------------
     void printPhi()
     {
-        std::cout << "================================\nPhi____: ";
+        std::cout << "Phi____: ";
 
         for (int i = 0; i < (*grid).counts.Product(); i++)
         {
+            if (i % (*grid).counts[0] == 0)
+            {
+                std::cout << "\n";
+            }
             std::cout << Phi[i] << ", ";
         }
 
-        std::cout << std::endl;
+        std::cout <<"\n================================"<< std::endl;
     }
 
     void printPhi_new()
     {
-        std::cout << "================================\nPhi_new: ";
+        std::cout << "Phi_new: ";
 
         for (int i = 0; i < (*grid).counts.Product(); i++)
         {
+            if (i % (*grid).counts[0] == 0)
+            {
+                std::cout << "\n";
+            }
             std::cout << Phi_new[i] << ", ";
         }
 
-        std::cout << std::endl;
+        std::cout <<"\n================================"<< std::endl;
     }
 
     T_INDEX Next_Cell(const int axis, const T_INDEX &index)
@@ -161,6 +169,7 @@ class FluidQuantity
     void flip()
     {
         std::swap(Phi, Phi_new);
+        // memcpy(Phi_new, Phi, sizeof(int)*((*grid).counts.Product()));
     }
 
     /* Advection */
@@ -179,7 +188,9 @@ class FluidSolver
 
     double *rhs;
     double *pressure_solution;
+    double *pressure_solution_old;
     int number_of_ghost_cells;
+    int size;
 
   public:
     FluidSolver();
@@ -195,12 +206,14 @@ class FluidSolver
         this->density = density;
         this->grid = &grid;
         this->number_of_ghost_cells = number_of_ghost_cells;
+        this->size = grid.counts.Product();
 
         // density = FluidQuantity(grid, -1);
         // pressure = FluidQuantity(grid, -1);
 
-        rhs = new double[grid.counts.Product()];
-        pressure_solution = new double[grid.counts.Product()];
+        rhs = new double[size];
+        pressure_solution = new double[size];
+        pressure_solution_old = new double[size];
     }
 
     ~FluidSolver()
@@ -212,6 +225,7 @@ class FluidSolver
 
         delete rhs;
         delete pressure_solution;
+        delete pressure_solution_old;
     }
 
     double getRGBcolorDensity(T_INDEX &index);
@@ -223,6 +237,7 @@ class FluidSolver
     void calculateRHS();
 
     /* Projection with CG */
+    void pressure_solution_Jacobi(const T_INDEX &index);
     void projection();
 
     /* Update velocity with pressure */
