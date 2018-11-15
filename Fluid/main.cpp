@@ -14,7 +14,7 @@ using T_INDEX = Vector<int, d>;
 
 //----------------------------------------------------
 
-double timestep = 0.12;
+double timestep = 0.1;
 double density = 1;
 
 int iterations = 0;
@@ -89,7 +89,7 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0 / 60.0, timer, 0);
+    glutTimerFunc(1000.0, timer, 0);
 }
 
 // -------------------------------------------------

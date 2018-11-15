@@ -237,7 +237,7 @@ class FluidSolver
     void calculateRHS();
 
     /* Projection with CG */
-    void pressure_solution_Jacobi(const T_INDEX &index);
+    void pressure_solution_Jacobi();
     void projection();
 
     /* Update velocity with pressure */
@@ -312,4 +312,7 @@ class FluidSolver
                 pressure_solution[index2offset(Previous_Cell(axis, index))]) *
                (*grid).one_over_dX(axis);
     }
+
+    void calculateNeighborI(int os, Vector<int, (2*d)> &neighborI);
+    double * getSparseA(int offset);
 };
