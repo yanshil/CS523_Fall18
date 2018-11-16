@@ -219,7 +219,7 @@ class FluidSolver
 
     double density;
 
-    double *rhs;
+    double *div;
     double *pressure_solution;
     int number_of_ghost_cells;
     int size;
@@ -243,12 +243,12 @@ class FluidSolver
         // density = FluidQuantity(grid, -1);
         // pressure = FluidQuantity(grid, -1);
 
-        rhs = new double[size];
+        div = new double[size];
         pressure_solution = new double[size];
 
         for (int i = 0; i < size; i++)
         {
-            rhs[i] = 0;
+            div[i] = 0;
             pressure_solution[i] = 0;
         }
     }
@@ -260,7 +260,7 @@ class FluidSolver
 
         delete density_field;
 
-        delete rhs;
+        delete div;
         delete pressure_solution;
     }
 
@@ -270,11 +270,70 @@ class FluidSolver
     void advection(double timestep);
 
     /* Calculate the RHS of Poisson Equation */
-    void calculateRHS();
+    void calculateDivergence();
 
     /* Projection with CG */
     void pressure_solution_Jacobi();
     void projection(int limit);
+    void Project();
+    /* ================== */
+    void SetDivBoundary()
+    {
+        T_INDEX currIndex;
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+        {
+            currIndex = T_INDEX() + iterator.Index();
+
+            for (int axis = 0; axis < d; axis++)
+            {
+
+                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
+                {
+                    div[index2offset(currIndex)] = 0;
+                    // break;
+                }
+            }
+        }
+    }
+    void SetPressureBoundary()
+    {
+        T_INDEX currIndex;
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+        {
+            currIndex = T_INDEX() + iterator.Index();
+
+            for (int axis = 0; axis < d; axis++)
+            {
+                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
+                {
+                    pressure_solution[index2offset(currIndex)] = 0;
+                    // break;
+                }
+            }
+        }
+    }
+    void SetVelocityBoundary()
+    {
+        T_INDEX currIndex;
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+        {
+            currIndex = T_INDEX() + iterator.Index();
+
+            for (int axis = 0; axis < d; axis++)
+            {
+                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
+                {
+                    (*velocityField[axis]).new_at(currIndex) = 0;
+                    // break;
+                }
+            }
+        }
+
+        // for(int i = 0; i < d; i++)
+        // {
+        //     (*velocityField[i]).new_at();
+        // }
+    }
 
     /* Update velocity with pressure */
     void updateVelocity(T_INDEX &index, double timestep);

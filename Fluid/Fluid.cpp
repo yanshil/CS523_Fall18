@@ -231,29 +231,23 @@ void printArray(double arr[], int size)
     std::cout << std::endl;
 }
 
-void FluidSolver::calculateRHS()
+void FluidSolver::calculateDivergence()
 {
     for (int i = 0; i < size; i++)
     {
-        rhs[i] = 0;
+        div[i] = 0;
         T_INDEX index = offset2index(i);
         // [u_{i+1/2, j, k} - u_{i-1/2, j, k}] / Delta x
         for (int axis = 0; axis < d; axis++)
         {
-            double divergence;
-
-            divergence = slope((*velocityField[axis]).at(Next_Cell(axis, index)),
-                               (*velocityField[axis]).at(index), (*grid).dX[axis]);
-            rhs[i] += divergence;
-
-            // if (divergence != 0)
-            // {
-            //     std::cout << "index = " << index << "\t";
-            //     std::cout << "axis = " << axis << "\t";
-            //     std::cout << "rhs[i] = " << rhs[i] << std::endl;
-            // }
+            double divergence = slope((*velocityField[axis]).at(Next_Cell(axis, index)),
+                                      (*velocityField[axis]).at(index), (*grid).dX[axis]);
+            div[i] += divergence;
         }
     }
+
+    SetDivBoundary();
+    SetPressureBoundary();
 }
 
 double calculate1Norm(double a[], double b[], int size)
@@ -304,6 +298,54 @@ double FluidSolver::getA(int i, int j)
     return result;
 }
 
+void FluidSolver::Project()
+{
+    for (size_t k = 0; k < 50; k++)
+    {
+        for (int i = 0; i < (*grid).counts(0); i++)
+        {
+            for (int j = 0; j < (*grid).counts(1); j++)
+            {
+                T_INDEX index = T_INDEX{i + 1, j + 1};
+
+                pressure_solution[index2offset(index)] = (size * div[index2offset(index)] +
+                                                          pressure_solution[index2offset(Previous_Cell(0, index))] +
+                                                          pressure_solution[index2offset(Next_Cell(0, index))] +
+                                                          pressure_solution[index2offset(Previous_Cell(1, index))] +
+                                                          pressure_solution[index2offset(Next_Cell(1, index))]) *
+                                                         0.25;
+            }
+        }
+
+        SetPressureBoundary();
+    }
+
+    // for (int i = 0; i < d; i++)
+    // {
+    //     double np = nablapOnI(index, i);
+    //     (*velocityField[i]).new_at(index) -= np * timestep;
+    // }
+
+    for (int i = 0; i < (*grid).counts(0); i++)
+    {
+        for (int j = 0; j < (*grid).counts(1); j++)
+        {
+            T_INDEX index = T_INDEX{i + 1, j + 1};
+            // interpolate pressure to vx, vy here
+
+            for (int axis = 0; axis < d; axis++)
+            {
+                (*velocityField[axis]).new_at(index) -= (pressure_solution[index2offset(Next_Cell(axis, index))] - pressure_solution[index2offset(index)]) * (*grid).one_over_dX(axis);
+            }
+
+            // vx_latest[VxIndex(i, j)] -= (pressure_bar[ScalarIndex(i + 1, j)] - pressure_bar[ScalarIndex(i, j)]) / cell_width;
+
+            // vy_latest[VyIndex(j, i)] -= (pressure_bar[ScalarIndex(j, i + 1)] - pressure_bar[ScalarIndex(j, i)]) / cell_width;
+        }
+    }
+    SetVelocityBoundary();
+}
+
 void FluidSolver::projection(int limit)
 {
     double x[size], x_new[size];
@@ -321,7 +363,7 @@ void FluidSolver::projection(int limit)
         {
             T_INDEX index = offset2index(os);
             double Aii = getA(os, os);
-            x_new[os] = rhs[os] / Aii;
+            x_new[os] = div[os] / Aii;
 
             int sum = 0;
             for (int axis = 0; axis < d; axis++)
@@ -403,21 +445,22 @@ void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV
 
 void FluidSolver::update(double timestep)
 {
+
+    (*density_field).printPhi();
     // Set rhs
-    calculateRHS();
-    // buildRhs();
-    // printArray(rhs, size);
+    calculateDivergence();
+    // printArray(div, size);
 
     advection(timestep);
 
-    projection(5000);
-    // printArray(pressure_solution, size);
-    updateVelocity(timestep);
+    Project();
+    // projection(5000);
+    // updateVelocity(timestep);
 
     flip();
     // std::cout << "Check Divergence free??" << std::endl;
     // calculateRHS();
-    printArray(rhs, size);
+    // printArray(div, size);
 
     // std::cout << "----- END UPDATE ---" << std::endl;
 }
