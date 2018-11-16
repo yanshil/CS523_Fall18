@@ -108,7 +108,7 @@ class FluidQuantity
             std::cout << Phi[i] << ", ";
         }
 
-        std::cout <<"\n================================"<< std::endl;
+        std::cout << "\n================================" << std::endl;
     }
 
     void printPhi_new()
@@ -124,24 +124,52 @@ class FluidQuantity
             std::cout << Phi_new[i] << ", ";
         }
 
-        std::cout <<"\n================================"<< std::endl;
+        std::cout << "\n================================" << std::endl;
     }
 
     T_INDEX Next_Cell(const int axis, const T_INDEX &index)
     {
-        return (*grid).Next_Cell(axis, index);
-    }
+        T_INDEX shifted_index(index);
+        shifted_index(axis) += 1;
 
+        return shifted_index;
+    }
+    // TODO
     T_INDEX Previous_Cell(const int axis, const T_INDEX &index)
     {
-        return (*grid).Previous_Cell(axis, index);
+        T_INDEX shifted_index(index);
+        shifted_index(axis) -= 1;
+
+        return shifted_index;
     }
 
     /*!
      * Read and Write access in the quantity field for Phi
      */
-    double &at(const T_INDEX &index)
+    double &modify_at(const T_INDEX &index)
     {
+        if (!(*grid).Inside_Domain(index))
+        {
+            std::cout << "index = " << index << std::endl;
+            // Raise exception
+            throw std::runtime_error("Try to write at an Out_of_domain area");
+        }
+        return Phi[index2offset(index)];
+    }
+
+    /*!
+     * Read access in the quantity field for Phi
+     */
+    double at(const T_INDEX &index)
+    {
+        if (!(*grid).Inside_Domain(index))
+        {
+            TV location = (*grid).Center(index);
+            T_INDEX clamped_index = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
+
+            return Phi[index2offset(clamped_index)];
+        }
+
         return Phi[index2offset(index)];
     }
 
@@ -158,6 +186,11 @@ class FluidQuantity
      */
     double &new_at(const T_INDEX &index)
     {
+        if (!(*grid).Inside_Domain(index))
+        {
+            // Raise exception
+            throw std::runtime_error("Try to write at an Out_of_domain area");
+        }
         return Phi_new[index2offset(index)];
     }
 
@@ -188,7 +221,6 @@ class FluidSolver
 
     double *rhs;
     double *pressure_solution;
-    double *pressure_solution_old;
     int number_of_ghost_cells;
     int size;
 
@@ -213,7 +245,12 @@ class FluidSolver
 
         rhs = new double[size];
         pressure_solution = new double[size];
-        pressure_solution_old = new double[size];
+
+        for (int i = 0; i < size; i++)
+        {
+            rhs[i] = 0;
+            pressure_solution[i] = 0;
+        }
     }
 
     ~FluidSolver()
@@ -225,7 +262,6 @@ class FluidSolver
 
         delete rhs;
         delete pressure_solution;
-        delete pressure_solution_old;
     }
 
     double getRGBcolorDensity(T_INDEX &index);
@@ -238,7 +274,7 @@ class FluidSolver
 
     /* Projection with CG */
     void pressure_solution_Jacobi();
-    void projection();
+    void projection(int limit);
 
     /* Update velocity with pressure */
     void updateVelocity(T_INDEX &index, double timestep);
@@ -260,12 +296,18 @@ class FluidSolver
     // TODO
     T_INDEX Next_Cell(const int axis, const T_INDEX &index)
     {
-        return (*grid).Next_Cell(axis, index);
+        T_INDEX shifted_index(index);
+        shifted_index(axis) += 1;
+
+        return shifted_index;
     }
     // TODO
     T_INDEX Previous_Cell(const int axis, const T_INDEX &index)
     {
-        return (*grid).Previous_Cell(axis, index);
+        T_INDEX shifted_index(index);
+        shifted_index(axis) -= 1;
+
+        return shifted_index;
     }
 
     // TODO:
@@ -308,11 +350,22 @@ class FluidSolver
 
     double nablapOnI(T_INDEX &index, int axis)
     {
-        return (pressure_solution[index2offset(index)] -
-                pressure_solution[index2offset(Previous_Cell(axis, index))]) *
-               (*grid).one_over_dX(axis);
+        double np;
+        T_INDEX index_pc = Previous_Cell(axis, index);
+
+        if (!(*grid).Inside_Domain(index_pc))
+        {
+            np = (pressure_solution[index2offset(index)] - 0) *
+                 (*grid).one_over_dX[axis];
+        }
+        else
+        {
+            np = (pressure_solution[index2offset(index)] -
+                  pressure_solution[index2offset(index_pc)]) *
+                 (*grid).one_over_dX[axis];
+        }
+        return np;
     }
 
-    void calculateNeighborI(int os, Vector<int, (2*d)> &neighborI);
-    double * getSparseA(int offset);
+    double getA(int i, int j);
 };

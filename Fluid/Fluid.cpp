@@ -123,7 +123,6 @@ double FluidQuantity::linter(TV &location)
     c100 = Next_Cell(0, c000);
     c010 = Next_Cell(1, c000);
     c110 = Next_Cell(0, c010);
-
     double px00 = linter(at(c000), at(c100), offset[0]);
     double px10 = linter(at(c010), at(c110), offset[0]);
     double py0 = linter(px00, px10, offset[1]);
@@ -160,23 +159,6 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
     TV location_traceback = Clamp_To_Domain(location - timestep * velocity);
 
     new_at(index) = linter(location_traceback);
-
-    // T_INDEX locationTB = (*grid).Clamp_To_Cell(location_traceback, number_of_ghost_cells);
-
-    // int tmp2 = (index - locationTB).Sum();
-    // double tmp = linter(location_traceback);
-
-    // if (axis == -1)
-    // {
-    //     std::cout << "index = " << index << std::endl;
-    //     std::cout << "axis = " << axis << std::endl;
-    //     std::cout << "location = " << location << std::endl;
-    //     std::cout << "velocity = " << velocity << std::endl;
-    //     std::cout << "timestep = " << timestep << std::endl;
-    //     std::cout << "location_traceback = " << location_traceback << std::endl;
-    //     std::cout << "phi_new at = " << tmp << std::endl;
-    //     std::cout << "---------------- " << std::endl;
-    // }
 }
 
 // -----------------------
@@ -194,11 +176,11 @@ void FluidSolver::initialize()
     // {
     //     (*velocityField[i]).fill(0.5);
     // }
-    (*velocityField[0]).fill(0);
+    (*velocityField[0]).fill(0.1);
     (*velocityField[1]).fill(0.1);
     // (*velocityField[2]).fill(0.5);
 
-    (*density_field).fill(0);
+    (*density_field).fill(0.1);
 }
 
 void FluidSolver::advection(double timestep)
@@ -210,9 +192,6 @@ void FluidSolver::advection(double timestep)
         currIndex = T_INDEX() + iterator.Index();
         (*density_field).advect(currIndex, timestep, velocityField);
     }
-
-    // (*density_field).printPhi_new();
-    // std::cout<<"advect density Finished..." << std::endl;
 
     // For each Fluid Velocity
     for (int i = 0; i < d; i++)
@@ -241,6 +220,12 @@ void printArray(double arr[], int size)
     std::cout << "----\n";
     for (int i = 0; i < size; i++)
     {
+
+        if (i % 16 == 0)
+        {
+            std::cout << "\n";
+        }
+
         std::cout << arr[i] << ", ";
     }
     std::cout << std::endl;
@@ -248,127 +233,82 @@ void printArray(double arr[], int size)
 
 void FluidSolver::calculateRHS()
 {
-
-    // // Initialize
-    // for (int i = 0; i < size; i++)
-    //     rhs[i] = 0;
-
     for (int i = 0; i < size; i++)
     {
         rhs[i] = 0;
         T_INDEX index = offset2index(i);
-
-        // double one_over_dXSquare = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
-        // for(int axis = 0; axis < d; axis++)
-        // {
-        //     // Usually should be ONE if NEXT CELL exist
-        //     if ((Next_Cell(axis, index) - index).Sum() != 0) {
-        //         rhs[i] += one_over_dXSquare * pressure_solution[index2offset(Next_Cell(axis, index))];
-        //         rhs[i] -= one_over_dXSquare * pressure_solution[i];
-        //     }
-        //     if ((Previous_Cell(axis, index) - index).Sum() != 0) {
-        //         rhs[i] += one_over_dXSquare * pressure_solution[index2offset(Previous_Cell(axis, index))];
-        //         rhs[i] -= one_over_dXSquare * pressure_solution[i];
-        //     }
-        // }
-
         // [u_{i+1/2, j, k} - u_{i-1/2, j, k}] / Delta x
         for (int axis = 0; axis < d; axis++)
         {
-            rhs[i] += slope((*velocityField[axis]).at(Next_Cell(axis, index)),
-                            (*velocityField[axis]).at(index), (*grid).dX[axis]);
+            double divergence;
+
+            divergence = slope((*velocityField[axis]).at(Next_Cell(axis, index)),
+                               (*velocityField[axis]).at(index), (*grid).dX[axis]);
+            rhs[i] += divergence;
+
+            // if (divergence != 0)
+            // {
+            //     std::cout << "index = " << index << "\t";
+            //     std::cout << "axis = " << axis << "\t";
+            //     std::cout << "rhs[i] = " << rhs[i] << std::endl;
+            // }
         }
     }
-}
-
-void FluidSolver::pressure_solution_Jacobi()
-{
 }
 
 double calculate1Norm(double a[], double b[], int size)
 {
     double max = __DBL_MIN__;
     for (int i = 0; i < size; i++)
-    {
         max = std::max(std::abs(a[i] - b[i]), max);
-    }
 
     return max;
 }
 
-void FluidSolver::calculateNeighborI(int os, Vector<int, (2 * d)> &neighborI)
+double FluidSolver::getA(int i, int j)
 {
-    // int os_Aijne[2 * d];
-    T_INDEX index = offset2index(os);
+    // TODO: Uniform Grid with m = n (=k)
+    double one_over_dXSquared = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
+    double result;
 
-    neighborI[0] = index2offset(Previous_Cell(0, index));
-    neighborI[1] = index2offset(Next_Cell(0, index));
-    neighborI[2] = index2offset(Previous_Cell(1, index));
-    neighborI[3] = index2offset(Next_Cell(1, index));
-
-    if (d == 3)
-    {
-        neighborI[4] = index2offset(Previous_Cell(2, index));
-        neighborI[5] = index2offset(Next_Cell(2, index));
-    }
-}
-
-double *FluidSolver::getSparseA(int offset)
-{
-    double spareA_i[(2 * d + 1)];
-
-    T_INDEX index = offset2index(offset);
-    double one_over_dXSquare = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
-
-    for (int i = 0; i < (2 * d + 1); i++)
+    int count = 0;
+    T_INDEX index_j = offset2index(j);
+    if (i == j)
     {
         for (int axis = 0; axis < d; axis++)
         {
-            // Lower
-            if ((Previous_Cell(axis, index) - index).Sum() != 0)
-            {
-                int tmp = axis;
-                spareA_i[tmp] += one_over_dXSquare * pressure_solution[index2offset(Previous_Cell(axis, index))];
-                spareA_i[(2 * d)] -= one_over_dXSquare * pressure_solution[offset];
-            }
-            // Upper
-            // Usually should be ONE if NEXT CELL exist
-            if ((Next_Cell(axis, index) - index).Sum() != 0)
-            {
-                int tmp = axis + d;
-                spareA_i[tmp] += one_over_dXSquare * pressure_solution[index2offset(Next_Cell(axis, index))];
-                spareA_i[(2 * d)] -= one_over_dXSquare * pressure_solution[offset];
-            }
+            if ((*grid).Inside_Domain(Next_Cell(axis, index_j)))
+                count++;
+            if ((*grid).Inside_Domain(Previous_Cell(axis, index_j)))
+                count++;
+        }
+
+        result = -one_over_dXSquared * count;
+    }
+    else // j != i
+    {
+        for (int axis = 0; axis < d; axis++)
+        {
+            if (!(*grid).Inside_Domain(index_j))
+                return 0;
+            if (!(*grid).Inside_Domain(Next_Cell(axis, index_j)))
+                return 0;
+            if (!(*grid).Inside_Domain(Previous_Cell(axis, index_j)))
+                return 0;
+
+            result = one_over_dXSquared;
         }
     }
 
-    // for(int axis = 0; axis < d; axis++)
-    // {
-    //     // Usually should be ONE if NEXT CELL exist
-    //     if ((Next_Cell(axis, index) - index).Sum() != 0) {
-    //         rhs[i] += one_over_dXSquare * pressure_solution[index2offset(Next_Cell(axis, index))];
-    //         rhs[i] -= one_over_dXSquare * pressure_solution[i];
-    //     }
-    //     if ((Previous_Cell(axis, index) - index).Sum() != 0) {
-    //         rhs[i] += one_over_dXSquare * pressure_solution[index2offset(Previous_Cell(axis, index))];
-    //         rhs[i] -= one_over_dXSquare * pressure_solution[i];
-    //     }
-    // }
-
-    return spareA_i;
+    // std::cout<< "A("<<i<<", "<<j<<") = "<< result << std::endl;
+    return result;
 }
 
-// TODO
-void FluidSolver::projection()
+void FluidSolver::projection(int limit)
 {
-    double Aij = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
-    double Aii = (-4) * Aij;
+    double x[size], x_new[size];
+    int iterations = 0;
 
-    double x[size];
-    double x_new[size];
-    Vector<int, (2 * d)> neighborI;
-
-    int iteration = 0;
     for (int i = 0; i < size; i++)
     {
         x[i] = 0;
@@ -377,60 +317,48 @@ void FluidSolver::projection()
 
     while (true)
     {
-        // // Jacobi
-        // for (int i = 0; i < size; i++)
-        // {
-        //     x_new[i] = rhs[i] / Aii;
-
-        //     int sum = 0;
-        //     calculateNeighborI(i, neighborI);
-
-        //     for (int j = 0; j < (2 * d); j++)
-        //     {
-        //         sum += x[neighborI[j]] * Aij;
-        //     }
-
-        //     x_new[i] -= sum / Aii;
-        // }
-
-        // Gauss-Seidel
-        for (int i = 0; i < size; i++)
+        for (int os = 0; os < size; os++)
         {
-            x_new[i] = rhs[i] / Aii;
-            int sum = 0;
-            calculateNeighborI(i, neighborI);
+            T_INDEX index = offset2index(os);
+            double Aii = getA(os, os);
+            x_new[os] = rhs[os] / Aii;
 
-            for (int j = 0; j < (2 * d); j++)
+            int sum = 0;
+            for (int axis = 0; axis < d; axis++)
             {
-                if (neighborI[j] < i)
-                    sum += Aij * x_new[neighborI[j]];
-                if (neighborI[j] > i)
-                    sum += Aij * x[neighborI[j]];
+                int tmp_j = index2offset(Next_Cell(axis, index));
+                sum += getA(os, tmp_j) * x[tmp_j];
+
+                int tmp_j2 = index2offset(Previous_Cell(axis, index));
+                sum += getA(os, tmp_j2) * x[tmp_j2];
             }
-            x_new[i] -= sum / Aii;
+
+            // for(int j = 0; j < size; j++)
+            // {
+            //     if(j != os)
+            //         sum+= getA(os,j) * x[j];
+            // }
+
+            x_new[os] -= sum / Aii;
         }
 
-        double norm1 = calculate1Norm(x, x_new, size);
-        if (norm1 < 0.000001)
+        if (calculate1Norm(x, x_new, size) < 0.0001)
         {
-            std::cout << "Natual Break with 1Norm = " << norm1 << std::endl;
-            std::cout << "Iteration: " << iteration << std::endl;
-            printArray(x_new, size);
-            copy_(x_new, pressure_solution, size);
+            copy_(x, pressure_solution, size);
+            std::cout << "Converge at " << iterations << std::endl;
             break;
         }
 
-        if (iteration >= 1000)
+        if (iterations > limit)
         {
-            std::cout << "break because of large iteration." << std::endl;
-            copy_(x_new, pressure_solution, size);
-            printArray(x_new, size);
+            copy_(x, pressure_solution, size);
+            std::cout << "Exceed Limit" << std::endl;
             break;
         }
 
         copy_(x_new, x, size);
 
-        iteration++;
+        iterations++;
     }
 }
 
@@ -446,21 +374,11 @@ void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
 
 void FluidSolver::updateVelocity(double timestep)
 {
-
     for (int i = 0; i < size; i++)
     {
         T_INDEX index = offset2index(i);
         updateVelocity(index, timestep);
     }
-
-    // T_INDEX currIndex;
-
-    // // Min Corner:(1,1,1) To Max Corner (T_INDEX counts)
-    // for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-    // {
-    //     currIndex = T_INDEX() + iterator.Index();
-    //     updateVelocity(currIndex, timestep);
-    // }
 }
 
 void FluidSolver::flip()
@@ -475,11 +393,11 @@ void FluidSolver::flip()
 
 void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV &velocity)
 {
-    (*density_field).at(index) = density;
+    (*density_field).modify_at(index) = density;
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField[i]).at(index) = velocity[i];
+        (*velocityField[i]).modify_at(index) = velocity[i];
     }
 }
 
@@ -487,14 +405,19 @@ void FluidSolver::update(double timestep)
 {
     // Set rhs
     calculateRHS();
-    printArray(rhs, size);
+    // buildRhs();
+    // printArray(rhs, size);
 
     advection(timestep);
 
-    projection();
+    projection(5000);
+    // printArray(pressure_solution, size);
     updateVelocity(timestep);
 
     flip();
+    // std::cout << "Check Divergence free??" << std::endl;
+    // calculateRHS();
+    printArray(rhs, size);
 
     // std::cout << "----- END UPDATE ---" << std::endl;
 }

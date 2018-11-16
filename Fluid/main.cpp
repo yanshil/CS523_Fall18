@@ -43,7 +43,7 @@ void drawGrid()
         {
             float yPos = -1.0 + y * quadSize;
 
-            T_INDEX index{x, y};
+            T_INDEX index{x+1, y+1};
             GLfloat color = solver->getRGBcolorDensity(index);
 
             glColor3f(color, color, color);
@@ -89,7 +89,7 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0, timer, 0);
+    glutTimerFunc(1000.0 / 60.0, timer, 0);
 }
 
 // -------------------------------------------------
