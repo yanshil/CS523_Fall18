@@ -26,6 +26,8 @@ class FluidQuantity
     int number_of_ghost_cells;
     Grid<T, d> *grid;
 
+    T_INDEX storing_counts;
+
     FluidQuantity()
     {
         grid = nullptr;
@@ -46,6 +48,38 @@ class FluidQuantity
         return (1.0 - x) * a + x * b;
     }
 
+    bool Inside_Domain(const T_INDEX &index)
+    {
+        T_INDEX diff = storing_counts - index;
+
+        for (int i = 0; i < d; i++)
+        {
+            if (diff(i) < 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool Inside_Domain(const TV &location)
+    {
+        TV tmp_location = TV(location);
+        // Clamp to domain if not in domain
+        T_INDEX tmp_index = (*grid).Cell(tmp_location, number_of_ghost_cells);
+
+        T_INDEX diff = storing_counts - tmp_index;
+
+        for (int i = 0; i < d; i++)
+        {
+            if (diff(i) < 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /*!
     * Auxiliary Function: Get exact offset for Column-based 1D array
     * return (z * xSize * ySize) + (y * xSize) + x;
@@ -56,9 +90,9 @@ class FluidQuantity
         // Becuase index in the grid start from (1,1)...
         T_INDEX tmp_index = index - T_INDEX(1);
 
-        int os = tmp_index[1] * (*grid).counts[0] + tmp_index[0];
+        int os = tmp_index[1] * storing_counts[0] + tmp_index[0];
         if (d == 3)
-            os += tmp_index[2] * (*grid).counts[0] * (*grid).counts[1];
+            os += tmp_index[2] * storing_counts[0] * storing_counts[1];
         return os;
     }
 
@@ -69,18 +103,18 @@ class FluidQuantity
         T_INDEX tmp_index = T_INDEX();
 
         // x <- os mod m
-        tmp_index[0] = os % (*grid).counts[0];
+        tmp_index[0] = os % storing_counts[0];
 
         if (d == 2)
             // y <- (os - x) / m
-            tmp_index[1] = (os - tmp_index[0]) / (*grid).counts[1];
+            tmp_index[1] = (os - tmp_index[0]) / storing_counts[1];
         else
         {
             // y <- (os - x) mod n
-            tmp_index[1] = (os - tmp_index[0]) % (*grid).counts[1];
+            tmp_index[1] = (os - tmp_index[0]) % storing_counts[1];
 
             // z <- (os - x - y * m) / (m*n)
-            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * (*grid).counts[0]) / (*grid).counts[0] / (*grid).counts[1];
+            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * storing_counts[0]) / storing_counts[0] / storing_counts[1];
         }
 
         // Becuase index in the grid start from (1,1)...
@@ -99,9 +133,9 @@ class FluidQuantity
     {
         std::cout << "Phi____: ";
 
-        for (int i = 0; i < (*grid).counts.Product(); i++)
+        for (int i = 0; i < storing_counts.Product(); i++)
         {
-            if (i % (*grid).counts[0] == 0)
+            if (i % storing_counts[0] == 0)
             {
                 std::cout << "\n";
             }
@@ -115,9 +149,9 @@ class FluidQuantity
     {
         std::cout << "Phi_new: ";
 
-        for (int i = 0; i < (*grid).counts.Product(); i++)
+        for (int i = 0; i < storing_counts.Product(); i++)
         {
-            if (i % (*grid).counts[0] == 0)
+            if (i % storing_counts[0] == 0)
             {
                 std::cout << "\n";
             }
@@ -148,27 +182,48 @@ class FluidQuantity
      */
     double &modify_at(const T_INDEX &index)
     {
-        if (!(*grid).Inside_Domain(index))
+        if (!Inside_Domain(index))
         {
             std::cout << "index = " << index << std::endl;
             // Raise exception
             throw std::runtime_error("Try to write at an Out_of_domain area");
         }
+        // if (!(*grid).Inside_Domain(index))
+        // {
+        //     std::cout << "index = " << index << std::endl;
+        //     // Raise exception
+        //     throw std::runtime_error("Try to write at an Out_of_domain area");
+        // }
         return Phi[index2offset(index)];
     }
 
     /*!
-     * Read access in the quantity field for Phi
+     * Read access for the quantity field of Phi
      */
     double at(const T_INDEX &index)
     {
-        if (!(*grid).Inside_Domain(index))
+        // e.g. For n = 4
+        // Density: 4 * 4 * 4;      velocityU: 5 * 4 * 4;   velocity V: 4 * 5 * 4;  velocity W: 4 * 4 * 5
+        // this->Inside_Domain are checking if is in (1,1,1) to (5, 4, 4) [For U]
+        // (*grid).Inside_Domain(index) is checking if is in (1,1,1) to (4,4,4)
+        // (*grid).Inside_Domain(index, num_of_ghost_cell = 1) is checking if is in (0,0,0) to (5,5,5)
+        
+        //----------------- Velocity /Scalar Field Domain ------------------
+        if (!Inside_Domain(index))
         {
             TV location = (*grid).Center(index);
             T_INDEX clamped_index = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
-
             return Phi[index2offset(clamped_index)];
         }
+
+        //------------------ Simulation Domain ----------------------------
+        // if (!(*grid).Inside_Domain(index))
+        // {
+        //     TV location = (*grid).Center(index);
+        //     T_INDEX clamped_index = (*grid).Clamp_To_Cell(location, number_of_ghost_cells);
+
+        //     return Phi[index2offset(clamped_index)];
+        // }
 
         return Phi[index2offset(index)];
     }
@@ -186,23 +241,27 @@ class FluidQuantity
      */
     double &new_at(const T_INDEX &index)
     {
-        if (!(*grid).Inside_Domain(index))
+        if (!Inside_Domain(index))
         {
             // Raise exception
             throw std::runtime_error("Try to write at an Out_of_domain area");
         }
+        // if (!(*grid).Inside_Domain(index))
+        // {
+        //     // Raise exception
+        //     throw std::runtime_error("Try to write at an Out_of_domain area");
+        // }
         return Phi_new[index2offset(index)];
     }
 
     /* Compute Velocity */
     TV computeVelocity(const T_INDEX &index, FluidQuantity *velocityField[d]);
     TV Clamp_To_Domain(const TV &location);
-    TV traceBack(const TV &location, double timestep, TV &velocity);
+    // TV traceBack(const TV &location, double timestep, TV &velocity);
 
     void flip()
     {
         std::swap(Phi, Phi_new);
-        // memcpy(Phi_new, Phi, sizeof(int)*((*grid).counts.Product()));
     }
 
     /* Advection */
@@ -219,10 +278,11 @@ class FluidSolver
 
     double density;
 
-    double *div;
+    double *divG;
     double *pressure_solution;
     int number_of_ghost_cells;
     int size;
+    T_INDEX storing_counts;
 
   public:
     FluidSolver();
@@ -240,15 +300,17 @@ class FluidSolver
         this->number_of_ghost_cells = number_of_ghost_cells;
         this->size = grid.counts.Product();
 
+        this->storing_counts = grid.counts;
+
         // density = FluidQuantity(grid, -1);
         // pressure = FluidQuantity(grid, -1);
 
-        div = new double[size];
+        divG = new double[size];
         pressure_solution = new double[size];
 
         for (int i = 0; i < size; i++)
         {
-            div[i] = 0;
+            divG[i] = 0;
             pressure_solution[i] = 0;
         }
     }
@@ -260,7 +322,7 @@ class FluidSolver
 
         delete density_field;
 
-        delete div;
+        delete divG;
         delete pressure_solution;
     }
 
@@ -275,65 +337,11 @@ class FluidSolver
     /* Projection with CG */
     void pressure_solution_Jacobi();
     void projection(int limit);
-    void Project();
+    void Project(int limit);
     /* ================== */
-    void SetDivBoundary()
-    {
-        T_INDEX currIndex;
-        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-        {
-            currIndex = T_INDEX() + iterator.Index();
-
-            for (int axis = 0; axis < d; axis++)
-            {
-
-                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
-                {
-                    div[index2offset(currIndex)] = 0;
-                    // break;
-                }
-            }
-        }
-    }
-    void SetPressureBoundary()
-    {
-        T_INDEX currIndex;
-        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-        {
-            currIndex = T_INDEX() + iterator.Index();
-
-            for (int axis = 0; axis < d; axis++)
-            {
-                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
-                {
-                    pressure_solution[index2offset(currIndex)] = 0;
-                    // break;
-                }
-            }
-        }
-    }
-    void SetVelocityBoundary()
-    {
-        T_INDEX currIndex;
-        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-        {
-            currIndex = T_INDEX() + iterator.Index();
-
-            for (int axis = 0; axis < d; axis++)
-            {
-                if ((currIndex[axis] == 1) | (currIndex[axis] == (*grid).counts[axis]))
-                {
-                    (*velocityField[axis]).new_at(currIndex) = 0;
-                    // break;
-                }
-            }
-        }
-
-        // for(int i = 0; i < d; i++)
-        // {
-        //     (*velocityField[i]).new_at();
-        // }
-    }
+    void SetDivBoundary();
+    void SetPressureBoundary();
+    void SetVelocityBoundary();
 
     /* Update velocity with pressure */
     void updateVelocity(T_INDEX &index, double timestep);
@@ -375,9 +383,9 @@ class FluidSolver
         // Becuase index in the grid start from (1,1)...
         T_INDEX tmp_index = index - T_INDEX(1);
 
-        int os = tmp_index[1] * (*grid).counts[0] + tmp_index[0];
+        int os = tmp_index[1] * storing_counts[0] + tmp_index[0];
         if (d == 3)
-            os += tmp_index[2] * (*grid).counts[0] * (*grid).counts[1];
+            os += tmp_index[2] * storing_counts[0] * storing_counts[1];
         return os;
     }
 
@@ -388,18 +396,18 @@ class FluidSolver
         T_INDEX tmp_index = T_INDEX();
 
         // x <- os mod m
-        tmp_index[0] = os % (*grid).counts[0];
+        tmp_index[0] = os % storing_counts[0];
 
         if (d == 2)
             // y <- (os - x) / m
-            tmp_index[1] = (os - tmp_index[0]) / (*grid).counts[1];
+            tmp_index[1] = (os - tmp_index[0]) / storing_counts[1];
         else
         {
             // y <- (os - x) mod n
-            tmp_index[1] = (os - tmp_index[0]) % (*grid).counts[1];
+            tmp_index[1] = (os - tmp_index[0]) % storing_counts[1];
 
             // z <- (os - x - y * m) / (m*n)
-            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * (*grid).counts[0]) / (*grid).counts[0] / (*grid).counts[1];
+            tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * storing_counts[0]) / storing_counts[0] / storing_counts[1];
         }
 
         // Becuase index in the grid start from (1,1)...
