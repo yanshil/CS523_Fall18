@@ -14,7 +14,7 @@ namespace Nova{
 template<class T,int d>
 class CG_System: public Krylov_System_Base<T>
 {
-    using TV                                = Vector<T,d>;
+    using TV                                   = Vector<T,d>;
     using Base                              = Krylov_System_Base<T>;
     using Vector_Base                       = Krylov_Vector_Base<T>;
 

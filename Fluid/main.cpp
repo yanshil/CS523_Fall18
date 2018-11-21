@@ -3,24 +3,29 @@
 #include <GL/glut.h>
 #include <iostream>
 
-#include "Fluid.h"
+#include "FluidSolver.h"
 #define CELLCOUNTS 32
 
 using namespace Nova;
 
 /*-------- Global typedef & varaible------------*/
-
+enum
+{
+    d = 2
+};
+using T = double;
 using T_INDEX = Vector<int, d>;
+using TV = Vector<T, d>;
 
 //----------------------------------------------------
 
-double timestep = 0.1;
+double timestep = 0.12;
 double density = 1;
 
 int iterations = 0;
 
 Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
-FluidSolver *solver = new FluidSolver(grid, 0, 1);
+FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, 1);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
@@ -43,8 +48,8 @@ void drawGrid()
         {
             float yPos = -1.0 + y * quadSize;
 
-            T_INDEX index{x+1, y+1};
-            GLfloat color = solver->getRGBcolorDensity(index);
+            T_INDEX index{x + 1, y + 1};
+            GLfloat color = (*solver).getRGBcolorDensity(index);
 
             glColor3f(color, color, color);
 

@@ -1,7 +1,8 @@
 add_executable(fluidsimulator
     main.cpp
     #test.cpp
-    Fluid.cpp
+    FluidQuantity.cpp
+    FluidSolver.cpp
     #lodepng.cpp
     #UnitTest_Range_Iterator.cpp
     #unitTest_Grid.cpp
@@ -14,7 +15,6 @@ target_link_libraries(fluidsimulator
     PRIVATE
     nova::tools
     nova::geometry
-
 )
 
 

@@ -2,12 +2,6 @@
 
 using namespace Nova;
 
-/* Calculate (b-a) / delta */
-double slope(double b, double a, double delta)
-{
-    return (b - a) / delta;
-}
-
 // ------------------ Fluid Quantity-------------------
 
 FluidQuantity::FluidQuantity(Grid<T, d> &grid, int axis, int number_of_ghost_cells)
@@ -164,6 +158,16 @@ void FluidQuantity::advect(const T_INDEX &index, double timestep, FluidQuantity 
     new_at(index) = linter(location_traceback);
 }
 
+void FluidQuantity::advect(double timestep, FluidQuantity *velocityField[d])
+{
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), storing_counts)); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        advect(currIndex, timestep, velocityField);
+    }
+}
+
 // ---------------- Fluid Solver----------------------
 //
 //
@@ -183,32 +187,21 @@ void FluidSolver::initialize()
     // {
     //     (*velocityField[i]).fill(0.5);
     // }
-    (*velocityField[0]).fill(0.1);
-    (*velocityField[1]).fill(0.1);
+    (*velocityField[0]).fill(0);
+    (*velocityField[1]).fill(0);
     // (*velocityField[2]).fill(0.5);
 
-    (*density_field).fill(0.1);
+    (*density_field).fill(0);
+
 }
 
 void FluidSolver::advection(double timestep)
 {
-    T_INDEX currIndex;
-    // Advect Density
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-    {
-        currIndex = T_INDEX() + iterator.Index();
-        (*density_field).advect(currIndex, timestep, velocityField);
-    }
+    (*density_field).advect(timestep, velocityField);
 
-    // For each Fluid Velocity
     for (int i = 0; i < d; i++)
     {
-        // For Each Cell in Grid
-        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
-        {
-            currIndex = T_INDEX() + iterator.Index();
-            (*velocityField[i]).advect(currIndex, timestep, velocityField);
-        }
+        (*velocityField[i]).advect(timestep, velocityField);
     }
 }
 
@@ -240,21 +233,25 @@ void printArray(double arr[], int size)
 
 void FluidSolver::calculateDivergence()
 {
-    for (int i = 0; i < size; i++)
+
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), storing_counts)); iterator.Valid(); iterator.Next())
     {
-        divG[i] = 0;
-        T_INDEX index = offset2index(i);
-        // [u_{i+1/2, j, k} - u_{i-1/2, j, k}] / Delta x
+        currIndex = T_INDEX() + iterator.Index();
+        int idx = index2offset(currIndex);
+        divG[idx] = 0;
+
         for (int axis = 0; axis < d; axis++)
         {
-            double divergence = slope((*velocityField[axis]).at(Next_Cell(axis, index)),
-                                      (*velocityField[axis]).at(index), (*grid).dX[axis]);
-            divG[i] += divergence;
+            T_INDEX n_index = Next_Cell(axis, currIndex);
+            if ((*grid).Inside_Domain(n_index))
+            {
+                divG[idx] += ((*velocityField[axis]).at(n_index) - (*velocityField[axis]).at(currIndex)) * (*grid).one_over_dX[axis];
+                // divG[idx] += ((*velocityField[axis]).new_at(n_index) - (*velocityField[axis]).new_at(currIndex)) * (*grid).one_over_dX[axis];
+            }
         }
     }
 
-    SetDivBoundary();
-    SetPressureBoundary();
 }
 
 double calculate1Norm(double a[], double b[], int size)
@@ -266,154 +263,72 @@ double calculate1Norm(double a[], double b[], int size)
     return max;
 }
 
-double FluidSolver::getA(int i, int j)
-{
-    // TODO: Uniform Grid with m = n (=k)
-    double one_over_dXSquared = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
-    double result;
-
-    int count = 0;
-    T_INDEX index_j = offset2index(j);
-    if (i == j)
-    {
-        for (int axis = 0; axis < d; axis++)
-        {
-            if ((*grid).Inside_Domain(Next_Cell(axis, index_j)))
-                count++;
-            if ((*grid).Inside_Domain(Previous_Cell(axis, index_j)))
-                count++;
-        }
-
-        result = -one_over_dXSquared * count;
-    }
-    else // j != i
-    {
-        for (int axis = 0; axis < d; axis++)
-        {
-            if (!(*grid).Inside_Domain(index_j))
-                return 0;
-            if (!(*grid).Inside_Domain(Next_Cell(axis, index_j)))
-                return 0;
-            if (!(*grid).Inside_Domain(Previous_Cell(axis, index_j)))
-                return 0;
-
-            result = one_over_dXSquared;
-        }
-    }
-
-    // std::cout<< "A("<<i<<", "<<j<<") = "<< result << std::endl;
-    return result;
-}
-
 void FluidSolver::Project(int limit)
 {
+    double scale = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
+    double maxDelta;
 
     for (int iteration = 0; iteration < limit; iteration++)
     {
+        maxDelta = __DBL_MIN__;
         T_INDEX index;
         for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
         {
             index = T_INDEX() + iterator.Index();
 
-            pressure_solution[index2offset(index)] = size * divG[index2offset(index)];
+            double Aii = 0;
+            double AijSum = 0;
+            int os = index2offset(index);
 
             for (int axis = 0; axis < d; axis++)
             {
-                pressure_solution[index2offset(index)] += pressure_solution[index2offset(Previous_Cell(axis, index))];
-                pressure_solution[index2offset(index)] += pressure_solution[index2offset(Next_Cell(axis, index))];
+                T_INDEX p_index = Previous_Cell(axis, index);
+                T_INDEX n_index = Next_Cell(axis, index);
+                if ((*grid).Inside_Domain(p_index))
+                {
+                    Aii -= scale;
+                    AijSum += scale * pressure_solution[index2offset(p_index)];
+                }
+                if ((*grid).Inside_Domain(n_index))
+                {
+                    Aii -= scale;
+                    AijSum += scale * pressure_solution[index2offset(n_index)];
+                }
             }
+
+            double newP = (divG[os] - AijSum) / Aii;
+
+            maxDelta = std::max(maxDelta, fabs(pressure_solution[os] - newP));
+
+            pressure_solution[os] = newP;
         }
 
-        SetPressureBoundary();
+        if (maxDelta < 1e-5)
+        {
+            printf("Exiting solver after %d iterations, maximum change is %f\n", iteration, maxDelta);
+            return;
+        }
     }
+    printf("Exceeded budget of %d iterations, maximum change was %f\n", limit, maxDelta);
+}
 
+void FluidSolver::updateVelocity(double timestep)
+{
     // Update Velocity
     T_INDEX index;
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         index = T_INDEX() + iterator.Index();
-
-        pressure_solution[index2offset(index)] = size * divG[index2offset(index)];
+        // pressure_solution[index2offset(index)] = size * divG[index2offset(index)];
 
         for (int axis = 0; axis < d; axis++)
         {
-            (*velocityField[axis]).new_at(index) -= (pressure_solution[index2offset(Next_Cell(axis, index))] -
-                                                     pressure_solution[index2offset(index)]) *
-                                                    (*grid).one_over_dX(axis);
-        }
-    }
-
-    SetVelocityBoundary();
-}
-
-void FluidSolver::projection(int limit)
-{
-    double x[size], x_new[size];
-    int iterations = 0;
-
-    for (int i = 0; i < size; i++)
-    {
-        x[i] = 0;
-        x_new[i] = 0;
-    }
-
-    while (true)
-    {
-        for (int os = 0; os < size; os++)
-        {
-            T_INDEX index = offset2index(os);
-            double Aii = getA(os, os);
-            x_new[os] = divG[os] / Aii;
-
-            int sum = 0;
-            for (int axis = 0; axis < d; axis++)
+            if ((*grid).Inside_Domain(Previous_Cell(axis, index)))
             {
-                int tmp_j = index2offset(Next_Cell(axis, index));
-                sum += getA(os, tmp_j) * x[tmp_j];
-
-                int tmp_j2 = index2offset(Previous_Cell(axis, index));
-                sum += getA(os, tmp_j2) * x[tmp_j2];
+                (*velocityField[axis]).new_at(index) -= timestep * (pressure_solution[index2offset(index)] - pressure_solution[index2offset(Previous_Cell(axis, index))]) *
+                                                        (*grid).one_over_dX(axis);
             }
-
-            x_new[os] -= sum / Aii;
         }
-
-        if (calculate1Norm(x, x_new, size) < 0.0001)
-        {
-            copy_(x, pressure_solution, size);
-            std::cout << "Converge at " << iterations << std::endl;
-            break;
-        }
-
-        if (iterations > limit)
-        {
-            copy_(x, pressure_solution, size);
-            std::cout << "Exceed Limit" << std::endl;
-            break;
-        }
-
-        copy_(x_new, x, size);
-
-        iterations++;
-    }
-}
-
-// TODO: Timestep get involve??
-void FluidSolver::updateVelocity(T_INDEX &index, double timestep)
-{
-    for (int i = 0; i < d; i++)
-    {
-        double np = nablapOnI(index, i);
-        (*velocityField[i]).new_at(index) -= np * timestep;
-    }
-}
-
-void FluidSolver::updateVelocity(double timestep)
-{
-    for (int i = 0; i < size; i++)
-    {
-        T_INDEX index = offset2index(i);
-        updateVelocity(index, timestep);
     }
 }
 
@@ -439,21 +354,31 @@ void FluidSolver::addInflow(const T_INDEX &index, const double density, const TV
 
 void FluidSolver::SetPressureBoundary()
 {
-    int n = storing_counts[0];
-    for (int i = 1; i <= n; i++)
-    {
-        pressure_solution[index2offset(T_INDEX{i, 1})] = pressure_solution[index2offset(T_INDEX{i, 2})];
-        pressure_solution[index2offset(T_INDEX{i, n})] = pressure_solution[index2offset(T_INDEX{i, n - 1})];
+    //1.m -> m,n
+    Range<int, d> vTop(T_INDEX{1, (*grid).counts[0]}, (*grid).counts);
+    // 1,1 -> 1, m
+    Range<int, d> uLeft(T_INDEX(1), T_INDEX{1, (*grid).counts[0]});
+    // n,1 -> m,n
+    Range<int, d> uRight(T_INDEX{(*grid).counts[1], 1}, (*grid).counts);
 
-        pressure_solution[index2offset(T_INDEX{1, i})] = pressure_solution[index2offset(T_INDEX{2, i})];
-        pressure_solution[index2offset(T_INDEX{n, i})] = pressure_solution[index2offset(T_INDEX{n - 1, i})];
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        pressure_solution[index2offset(currIndex)] = pressure_solution[index2offset(Previous_Cell(1, currIndex))];
     }
 
-    // At Corner
-    pressure_solution[index2offset(T_INDEX{1, 1})] = 0.5 * (pressure_solution[index2offset(T_INDEX{2, 1})] + pressure_solution[index2offset(T_INDEX{1, 2})]);
-    pressure_solution[index2offset(T_INDEX{1, n})] = 0.5 * (pressure_solution[index2offset(T_INDEX{2, n})] + pressure_solution[index2offset(T_INDEX{1, n - 1})]);
-    pressure_solution[index2offset(T_INDEX{n, 1})] = 0.5 * (pressure_solution[index2offset(T_INDEX{n - 1, 1})] + pressure_solution[index2offset(T_INDEX{n, 2})]);
-    pressure_solution[index2offset(T_INDEX{n, n})] = 0.5 * (pressure_solution[index2offset(T_INDEX{n - 1, n})] + pressure_solution[index2offset(T_INDEX{n, n - 1})]);
+    for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        pressure_solution[index2offset(currIndex)] = pressure_solution[index2offset(Next_Cell(0, currIndex))];
+    }
+
+    for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        pressure_solution[index2offset(currIndex)] = pressure_solution[index2offset(Previous_Cell(0, currIndex))];
+    }
 }
 
 void FluidSolver::SetVelocityBoundary()
@@ -469,45 +394,94 @@ void FluidSolver::SetVelocityBoundary()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*density_field).new_at(currIndex) = 0;
+        (*velocityField[0]).new_at(currIndex) = (*velocityField[0]).new_at(Previous_Cell(1, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*density_field).new_at(currIndex) = 0;
+        (*velocityField[1]).new_at(currIndex) = (*velocityField[1]).new_at(Next_Cell(0, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*density_field).new_at(currIndex) = 0;
+        (*velocityField[1]).new_at(currIndex) = (*velocityField[1]).new_at(Previous_Cell(0, currIndex));
+    }
+}
+
+void FluidSolver::SetVelocityBoundary_as0()
+{
+    //1.m -> m,n
+    Range<int, d> vTop(T_INDEX{1, (*grid).counts[0]}, (*grid).counts);
+    // 1,1 -> 1, m
+    Range<int, d> uLeft(T_INDEX(1), T_INDEX{1, (*grid).counts[0]});
+    // n,1 -> m,n
+    Range<int, d> uRight(T_INDEX{(*grid).counts[1], 1}, (*grid).counts);
+
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        (*velocityField[1]).new_at(currIndex) = 0;
+    }
+
+    for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        (*velocityField[0]).new_at(currIndex) = 0;
+    }
+
+    for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        (*velocityField[0]).new_at(currIndex) = 0;
     }
 }
 
 void FluidSolver::SetDivBoundary()
 {
+    //1.m -> m,n
+    Range<int, d> vTop(T_INDEX{1, (*grid).counts[0]}, (*grid).counts);
+    // 1,1 -> 1, m
+    Range<int, d> uLeft(T_INDEX(1), T_INDEX{1, (*grid).counts[0]});
+    // n,1 -> m,n
+    Range<int, d> uRight(T_INDEX{(*grid).counts[1], 1}, (*grid).counts);
+
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        divG[index2offset(currIndex)] = divG[index2offset(Previous_Cell(1, currIndex))];
+    }
+
+    for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        divG[index2offset(currIndex)] = divG[index2offset(Next_Cell(0, currIndex))];
+    }
+
+    for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
+    {
+        currIndex = T_INDEX() + iterator.Index();
+        divG[index2offset(currIndex)] = divG[index2offset(Previous_Cell(0, currIndex))];
+    }
 }
 
 void FluidSolver::update(double timestep)
 {
-
-    (*density_field).printPhi();
-    // Set rhs
     calculateDivergence();
-    // printArray(divG, size);
-
     advection(timestep);
 
-    // Project(100);
-    // projection(5000);
+    Project(1000);
     updateVelocity(timestep);
-    SetVelocityBoundary();
+    SetVelocityBoundary_as0();
 
     flip();
-    // std::cout << "Check Divergence free??" << std::endl;
-    // calculateRHS();
-    // printArray(divG, size);
 
-    // std::cout << "----- END UPDATE ---" << std::endl;
+    for (int i = 0; i < size; i++)
+    {
+        pressure_solution[i] = 0;
+    }
+
 }
