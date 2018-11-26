@@ -24,7 +24,7 @@ void FluidSolver<T, d>::initialize()
     //     (*velocityField[i]).fill(0.5);
     // }
     (*velocityField[0]).fill(0);
-    (*velocityField[1]).fill(0);
+    (*velocityField[1]).fill(0.1);
     // (*velocityField[2]).fill(0.5);
 
     (*density_field).fill(0);
@@ -42,6 +42,7 @@ void FluidSolver<T, d>::advection(T timestep)
     {
         (*velocityField[i]).advect(timestep, velocityField);
     }
+    
 }
 
 // TODO
@@ -312,14 +313,18 @@ void FluidSolver<T, d>::SetDivBoundary()
 template <typename T, int d>
 void FluidSolver<T, d>::update(T timestep)
 {
+    //  std::cout<< "Running" <<std::endl;
     calculateDivergence();
     advection(timestep);
+    // SetVelocityBoundary_as0();
+   
 
     Project(1000);
     updateVelocity(timestep);
-    SetVelocityBoundary_as0();
+    
 
     flip();
+    // SetVelocityBoundary_as0();
 
     for (int i = 0; i < size; i++)
     {
