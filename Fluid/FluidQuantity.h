@@ -58,8 +58,10 @@ class FluidQuantity
     T linter(T a, T b, T x);
     T linter(const TV &location);
     bool Inside_Domain(const T_INDEX &index);
+    
     int index2offset(const T_INDEX &index);
     T_INDEX offset2index(const int os);
+
     T_INDEX Next_Cell(const int axis, const T_INDEX &index);
     T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
     /////////////////////////////////////////////////
