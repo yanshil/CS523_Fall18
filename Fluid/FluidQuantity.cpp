@@ -107,16 +107,20 @@ T &FluidQuantity<T, d>::modify_at(const T_INDEX &index)
 template <typename T, int d>
 T &FluidQuantity<T, d>::new_at(const T_INDEX &index)
 {
-    if (!Inside_Domain(index))
-    {
-        // Raise exception
-        throw std::runtime_error("Try to write at an Out_of_domain area");
-    }
-    // if (!grid->Inside_Domain(index))
+    // if (!Inside_Domain(index))
     // {
     //     // Raise exception
     //     throw std::runtime_error("Try to write at an Out_of_domain area");
     // }
+    if (!grid->Inside_Domain(index, number_of_ghost_cells))
+    {
+        // std::cout << "Modifying " << index << std::endl;
+        // std::cout << number_of_ghost_cells << std::endl;
+        // std::cout << grid->index2offset(index) << std::endl;
+        // std::cout << size_whole_domain << std::endl;
+        // Raise exception
+        throw std::runtime_error("Try to write at an Out_of_domain area");
+    }
     return Phi_new[grid->index2offset(index)];
 }
 //######################################################################

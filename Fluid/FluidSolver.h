@@ -64,7 +64,8 @@ public:
   /* ================== */
   void SetDivBoundary();
   void SetPressureBoundary();
-  void SetVelocityBoundary();
+  void setBoundaryCondition();
+  void spread2Ghost();
   void SetVelocityBoundary_as0();
 
   /* Update velocity with pressure */
@@ -76,7 +77,7 @@ public:
 
   void initialize();
   /* UPDATE */
-  void addInflow(const T_INDEX &index, const T density, const TV &velocity);
+  void addInflow(const T_INDEX &index, const T density);
 
   void update(T timestep);
 

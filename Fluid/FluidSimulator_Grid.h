@@ -73,6 +73,7 @@ Vector<int, d> FluidSimulator_Grid<T, d>::Previous_Cell(const int axis, const T_
 template <typename T, int d>
 int FluidSimulator_Grid<T, d>::index2offset(const T_INDEX &index)
 {
+    T_INDEX min_corner = this->Cell_Indices(number_of_ghost_cells).min_corner;
     // Becuase index in the grid start from (1,1)...
     T_INDEX tmp_index = index;
     tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);

@@ -72,9 +72,9 @@ class FluidQuantity
     {
         std::cout << "Phi____: ";
 
-        for (int i = 0; i < simulation_domain.Product(); i++)
+        for (int i = 0; i < whole_domain.Product(); i++)
         {
-            if (i % simulation_domain[0] == 0)
+            if (i % whole_domain[0] == 0)
             {
                 std::cout << "\n";
             }
@@ -88,9 +88,9 @@ class FluidQuantity
     {
         std::cout << "Phi_new: ";
 
-        for (int i = 0; i < simulation_domain.Product(); i++)
+        for (int i = 0; i < whole_domain.Product(); i++)
         {
-            if (i % simulation_domain[0] == 0)
+            if (i % whole_domain[0] == 0)
             {
                 std::cout << "\n";
             }
