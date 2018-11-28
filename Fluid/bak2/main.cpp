@@ -23,9 +23,10 @@ double timestep = 0.12;
 double density = 1;
 
 int iterations = 0;
+int number_of_ghost_cells = 1;
 
-Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
-FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, 1);
+FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box(), number_of_ghost_cells);
+FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, number_of_ghost_cells);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
@@ -79,7 +80,7 @@ void display()
     //-------------------------------------
 
     // addInflow(T_INDEX &index, double density, TV &velocity);
-    // solver->addInflow(T_INDEX{8, 1}, density, TV{0, 0});
+    solver->addInflow(T_INDEX{8, 1}, density, TV{0, 1});
     solver->update(timestep);
 }
 
@@ -103,10 +104,6 @@ int main(int argc, char **argv)
 {
 
     solver->initialize();
-    solver->addInflow(T_INDEX{16, 16}, density, TV{0, 0});
-    solver->addInflow(T_INDEX{16, 15}, density, TV{0, 0});
-    solver->addInflow(T_INDEX{15, 16}, density, TV{0, 0});
-    solver->addInflow(T_INDEX{15, 15}, density, TV{0, 0});
 
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title

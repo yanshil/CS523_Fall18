@@ -1,12 +1,21 @@
-#include "Fluid.h"
+#include "FluidQuantity.h"
 
 using namespace Nova;
+
+enum
+{
+    d = 2
+};
+using T = double;
+using T_INDEX = Vector<int, d>;
+using TV = Vector<T, d>;
+
 
 /*-------- Global typedef & varaible------------*/
 
 using T_INDEX = Vector<int, d>;
 
-void testIndex2Offset(const T_INDEX &index, FluidQuantity& u)
+void testIndex2Offset(const T_INDEX &index, FluidQuantity<T,d>& u)
 {
     std::cout<<"Original index = "<< index << std::endl;
     int os = u.index2offset(index);
@@ -17,7 +26,7 @@ void testIndex2Offset(const T_INDEX &index, FluidQuantity& u)
 
 }
 
-void testOffset2Index(const int os, FluidQuantity& u)
+void testOffset2Index(const int os, FluidQuantity<T,d>& u)
 {
     std::cout<<"Original offset = "<< os << std::endl;
     T_INDEX index = u.offset2index(os);
@@ -30,24 +39,24 @@ void testOffset2Index(const int os, FluidQuantity& u)
 
 main(int argc, char const *argv[])
 {
-    Grid<T, d> grid(T_INDEX(16), Range<T, d>::Unit_Box());
+    Grid<T, d> grid(T_INDEX(32), Range<T, d>::Unit_Box());
 
-    FluidQuantity *u = new FluidQuantity(grid, 1, 1);
+    FluidQuantity<T,d> *u = new FluidQuantity<T,d>(grid, 1, 0);
 
     std::cout<<"================="<<std::endl;
-    // testIndex2Offset(T_INDEX{1,1}, *u);
-    // testIndex2Offset(T_INDEX{4,5}, *u);
-    // testIndex2Offset(T_INDEX{2,2}, *u);
-    // testIndex2Offset(T_INDEX{5,4}, *u);
-    // testIndex2Offset(T_INDEX{16,16}, *u);
+    testIndex2Offset(T_INDEX{1,1}, *u);
+    testIndex2Offset(T_INDEX{4,5}, *u);
+    testIndex2Offset(T_INDEX{2,2}, *u);
+    testIndex2Offset(T_INDEX{5,4}, *u);
+    testIndex2Offset(T_INDEX{16,16}, *u);
 
-    // std::cout<<"================="<<std::endl;
+    std::cout<<"================="<<std::endl;
     
-    // testOffset2Index(100, *u);
-    // testOffset2Index(1, *u);
-    // testOffset2Index(35, *u);
-    // testOffset2Index(256, *u);
-    // testOffset2Index(255, *u);
+    testOffset2Index(100, *u);
+    testOffset2Index(1, *u);
+    testOffset2Index(35, *u);
+    testOffset2Index(256, *u);
+    testOffset2Index(255, *u);
 
     testIndex2Offset(T_INDEX{2,2}, *u);
     testIndex2Offset(T_INDEX{2,1}, *u);
