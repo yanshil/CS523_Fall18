@@ -21,14 +21,14 @@ FluidSolver<T, d>::FluidSolver(FluidSimulator_Grid<T, d> &grid, T density, int n
     this->size_interior_domain = interior_domain.Product();
     this->size_whole_domain = whole_domain.Product();
 
-    _rhs = new T[size_interior_domain];
-    _p = new T[size_interior_domain];
+    _rhs = new T[size_whole_domain];
+    _p = new T[size_whole_domain];
 
     // _BCflag = new Boundary_Condition[size_whole_domain];
 
     _BCflag = new int[size_whole_domain];
 
-    for (int i = 0; i < size_interior_domain; i++)
+    for (int i = 0; i < size_whole_domain; i++)
     {
         _rhs[i] = 0;
         _p[i] = 0;
@@ -185,7 +185,7 @@ T calculate1Norm(T a[], T b[], int size)
 template <typename T, int d>
 void FluidSolver<T, d>::Project(int limit)
 {
-    // TODO: Modify
+    // TODO: Modify the domain things!
     calculateDivergence();
 
     T scale = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
@@ -195,7 +195,7 @@ void FluidSolver<T, d>::Project(int limit)
     {
         maxDelta = __DBL_MIN__;
         T_INDEX index;
-        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
+        for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1),interior_domain)); iterator.Valid(); iterator.Next())
         {
             index = T_INDEX() + iterator.Index();
 
