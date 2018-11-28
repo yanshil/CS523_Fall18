@@ -67,24 +67,31 @@ void FluidSolver<T, d>::initialize()
     // {
     //     (*_v[i]).fill(0.5);
     // }
-    (*_v[0]).fill(0);
-    (*_v[1]).fill(0.1);
+    // (*_v[0]).fill(0);
+    // (*_v[1]).fill(0.1);
 
     // // Circle Test
-    // T_INDEX index;
-    // for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), interior_domain)); iterator.Valid(); iterator.Next())
-    // {
-    //     index = T_INDEX() + iterator.Index();
-    //     int idx = grid->index2offset(index);
+    T_INDEX index;
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), interior_domain)); iterator.Valid(); iterator.Next())
+    {
+        index = T_INDEX() + iterator.Index();
 
-    //     for (int axis = 0; axis < d; axis++)
-    //     {
-    //         // std::cout << "index = " << index << std::endl;
-    //         double sum = (index(0) - 16) * (index(0) - 16) + (index(1) - 16) * (index(1) - 16);
-    //         // double sum = 1.0;
-    //         (*_v[axis]).modify_at(index) = (index(1 - axis) - 16) / sum;
-    //     }
-    // }
+        // std::cout << "Index: "<< index << std::endl;
+        for (int axis = 0; axis < d; axis++)
+        {
+            // std::cout << "index = " << index << std::endl;
+            double r_square = (index(0) - 16) * (index(0) - 16) + (index(1) - 16) * (index(1) - 16);
+            double r = std::sqrt(r_square);
+            double tmpV = (index(1 - axis) - 16) / r;
+            if(axis == 1)
+            {
+                tmpV = -1.0 * tmpV;
+            }
+            (*_v[axis]).modify_at(index) = tmpV;
+            // std::cout << "u(" << axis << ") = " << tmpV << "\t";
+        }
+        // std::cout << std::endl;
+    }
 }
 //######################################################################
 // TODO
@@ -330,15 +337,6 @@ void FluidSolver<T, d>::spread2Ghost()
     // 0,0 -> m, 0
     Range<int, d> vBottom(min_corner, T_INDEX{m, n0});
 
-    // // 0, 33 -> 33, 33
-    // Range<int, d> vTop(T_INDEX{min_corner(0), n}, max_corner);
-    // // 0,0 -> 0,
-    // Range<int, d> uLeft(min_corner, T_INDEX{m, min_corner(1)});
-    // // m. 0 -> m, n
-    // Range<int, d> uRight(T_INDEX{m, min_corner(1)}, max_corner);
-    // // 0,0 -> m,0
-    // Range<int, d> vBottom(min_corner, T_INDEX{m, 0});
-
     T_INDEX currIndex;
     // On Top: u -> ghost; v <- 0
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
@@ -377,9 +375,9 @@ void FluidSolver<T, d>::update(T timestep)
     //  std::cout<< "Running" <<std::endl;
     spread2Ghost();
     advection(timestep);
-    // _d->printPhi();
-    // _v[0]->printPhi();
-    // _v[1]->printPhi();
+    _d->printPhi();
+    _v[0]->printPhi();
+    _v[1]->printPhi();
     setBoundaryCondition();
 
     // Project(1000);

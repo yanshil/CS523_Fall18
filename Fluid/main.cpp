@@ -78,7 +78,7 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    solver->addInflow(T_INDEX{8, 1}, density);
+    // solver->addInflow(T_INDEX{20, 20}, density);
     solver->update(timestep);
 }
 
@@ -93,7 +93,7 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0 / 60.0, timer, 0);
+    glutTimerFunc(1000.0, timer, 0);
 }
 
 // -------------------------------------------------
@@ -102,10 +102,7 @@ int main(int argc, char **argv)
 {
 
     solver->initialize();
-    // solver->addInflow(T_INDEX{16, 16}, density, TV{0, 0});
-    // solver->addInflow(T_INDEX{16, 15}, density, TV{0, 0});
-    // solver->addInflow(T_INDEX{15, 16}, density, TV{0, 0});
-    // solver->addInflow(T_INDEX{15, 15}, density, TV{0, 0});
+    solver->addInflow(T_INDEX{20, 20}, density);
 
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title

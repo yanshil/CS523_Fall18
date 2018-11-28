@@ -183,7 +183,7 @@ Vector<T, d> FluidQuantity<T, d>::Clamp_To_Domain(const TV &location)
 {
     TV tmp_location = TV(location);
 
-    // Clamp to domain if not in domain
+    // Clamp to Inertia domain if not in
     T_INDEX tmp_index = grid->Cell(tmp_location, number_of_ghost_cells);
 
     if (!grid->Inside_Domain(tmp_index))
