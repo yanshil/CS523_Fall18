@@ -23,9 +23,15 @@ class FluidQuantity
     T *Phi_new; // Array of num_cell
     int axis;   // -1 for Scalar. 0, 1, 2 to indicate faces axis
     int number_of_ghost_cells;
+
+    int size_whole_domain;
+    int size_interior_domain;
+    int size_simulation_domain;
     Grid<T, d> *grid;
 
-    T_INDEX storing_counts;
+    T_INDEX interior_domain;
+    T_INDEX whole_domain;
+    T_INDEX simulation_domain;
 
     FluidQuantity();
     FluidQuantity(Grid<T, d> &grid, int axis, int number_of_ghost_cells);
@@ -46,7 +52,7 @@ class FluidQuantity
     /////////////////////////////////////////////////
     /// Fluid Simulate Steps
     /////////////////////////////////////////////////
-   /* Compute Velocity */
+    /* Compute Velocity */
     TV computeVelocity(const TV &location, FluidQuantity *velocityField[d]);
     /* Advection */
     void advect(const T_INDEX &index, T timestep, FluidQuantity *velocityField[d]);
@@ -58,7 +64,7 @@ class FluidQuantity
     T linter(T a, T b, T x);
     T linter(const TV &location);
     bool Inside_Domain(const T_INDEX &index);
-    
+
     int index2offset(const T_INDEX &index);
     T_INDEX offset2index(const int os);
 
@@ -71,9 +77,9 @@ class FluidQuantity
     {
         std::cout << "Phi____: ";
 
-        for (int i = 0; i < storing_counts.Product(); i++)
+        for (int i = 0; i < simulation_domain.Product(); i++)
         {
-            if (i % storing_counts[0] == 0)
+            if (i % simulation_domain[0] == 0)
             {
                 std::cout << "\n";
             }
@@ -87,9 +93,9 @@ class FluidQuantity
     {
         std::cout << "Phi_new: ";
 
-        for (int i = 0; i < storing_counts.Product(); i++)
+        for (int i = 0; i < simulation_domain.Product(); i++)
         {
-            if (i % storing_counts[0] == 0)
+            if (i % simulation_domain[0] == 0)
             {
                 std::cout << "\n";
             }
@@ -98,7 +104,6 @@ class FluidQuantity
 
         std::cout << "\n================================" << std::endl;
     }
-
 };
 } // namespace Nova
 

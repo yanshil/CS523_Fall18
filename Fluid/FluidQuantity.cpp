@@ -24,12 +24,19 @@ FluidQuantity<T, d>::FluidQuantity(Grid<T, d> &grid, int axis, int number_of_gho
 {
     std::cout << "Correct Constructor!" << std::endl;
 
-    storing_counts = T_INDEX(grid.counts);
-    if (axis != -1)
-        storing_counts(axis) += 1;
+    this->interior_domain = grid.counts;
+    this->whole_domain = grid.counts + T_INDEX(number_of_ghost_cells * 2);
 
-    Phi = new T[storing_counts.Product()];
-    Phi_new = new T[storing_counts.Product()];
+    simulation_domain = T_INDEX(interior_domain);
+    if (axis != -1)
+        simulation_domain(axis) += 1;
+
+    this->size_interior_domain = interior_domain.Product();
+    this->size_whole_domain = whole_domain.Product();
+    this->size_simulation_domain = simulation_domain.Product();
+    
+    Phi = new T[simulation_domain.Product()];
+    Phi_new = new T[simulation_domain.Product()];
 }
 ////////////////////////////////////////////////////////////////////////
 /// Destructor
@@ -46,7 +53,7 @@ FluidQuantity<T, d>::~FluidQuantity()
 template <typename T, int d>
 void FluidQuantity<T, d>::fill(T content)
 {
-    for (int i = 0; i < storing_counts.Product(); i++)
+    for (int i = 0; i < simulation_domain.Product(); i++)
         Phi[i] = content;
 }
 //######################################################################
@@ -133,7 +140,7 @@ T FluidQuantity<T, d>::linter(T a, T b, T x)
 template <typename T, int d>
 bool FluidQuantity<T, d>::Inside_Domain(const T_INDEX &index)
 {
-    T_INDEX diff = storing_counts - index;
+    T_INDEX diff = simulation_domain - index;
 
     for (int i = 0; i < d; i++)
     {
@@ -156,9 +163,9 @@ int FluidQuantity<T, d>::index2offset(const T_INDEX &index)
     // Becuase index in the grid start from (1,1)...
     T_INDEX tmp_index = index - T_INDEX(1);
 
-    int os = tmp_index[1] * storing_counts[0] + tmp_index[0];
+    int os = tmp_index[1] * simulation_domain[0] + tmp_index[0];
     if (d == 3)
-        os += tmp_index[2] * storing_counts[0] * storing_counts[1];
+        os += tmp_index[2] * simulation_domain[0] * simulation_domain[1];
     return os;
 }
 /**
@@ -174,18 +181,18 @@ Vector<int, d> FluidQuantity<T, d>::offset2index(const int os)
     T_INDEX tmp_index = T_INDEX();
 
     // x <- os mod m
-    tmp_index[0] = os % storing_counts[0];
+    tmp_index[0] = os % simulation_domain[0];
 
     if (d == 2)
         // y <- (os - x) / m
-        tmp_index[1] = (os - tmp_index[0]) / storing_counts[1];
+        tmp_index[1] = (os - tmp_index[0]) / simulation_domain[1];
     else
     {
         // y <- (os - x) mod n
-        tmp_index[1] = (os - tmp_index[0]) % storing_counts[1];
+        tmp_index[1] = (os - tmp_index[0]) % simulation_domain[1];
 
         // z <- (os - x - y * m) / (m*n)
-        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * storing_counts[0]) / storing_counts[0] / storing_counts[1];
+        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * simulation_domain[0]) / simulation_domain[0] / simulation_domain[1];
     }
 
     // Becuase index in the grid start from (1,1)...
@@ -389,7 +396,7 @@ template <typename T, int d>
 void FluidQuantity<T, d>::advect(T timestep, FluidQuantity *velocityField[d])
 {
     T_INDEX currIndex;
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), storing_counts)); iterator.Valid(); iterator.Next())
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), simulation_domain)); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
         advect(currIndex, timestep, velocityField);

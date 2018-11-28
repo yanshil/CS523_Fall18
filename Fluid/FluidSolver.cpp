@@ -6,28 +6,27 @@ using namespace Nova;
 //######################################################################
 template <typename T, int d>
 FluidSolver<T, d>::FluidSolver(Grid<T, d> &grid, T density, int number_of_ghost_cells)
+    :grid(&grid), density(density), number_of_ghost_cells(number_of_ghost_cells)
 {
     std::cout << "Constructor of FluidSolver" << std::endl;
 
     for (int axis = 0; axis < d; axis++)
-        velocityField[axis] = new FluidQuantity<T, d>(grid, axis, number_of_ghost_cells);
+        _v[axis] = new FluidQuantity<T, d>(grid, axis, number_of_ghost_cells);
 
-    // TODO
-    this->density_field = new FluidQuantity<T, d>(grid, -1, number_of_ghost_cells);
-    this->density = density;
-    this->grid = &grid;
-    this->number_of_ghost_cells = number_of_ghost_cells;
-    this->size = grid.counts.Product();
+    this->_d = new FluidQuantity<T, d>(grid, -1, number_of_ghost_cells);
+    
+    this->interior_domain = grid.counts;
+    this->whole_domain = grid.counts + T_INDEX(number_of_ghost_cells * 2);
 
-    this->storing_counts = grid.counts;
+    this->size_interior_domain = interior_domain.Product();
+    this->size_whole_domain = whole_domain.Product();
 
-    // density = FluidQuantity(grid, -1);
-    // pressure = FluidQuantity(grid, -1);
+    _rhs = new T[size_interior_domain];
+    _p = new T[size_interior_domain];
 
-    _rhs = new T[size];
-    _p = new T[size];
+    _BCflag = new Boundary_Condition[size_whole_domain];
 
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size_interior_domain; i++)
     {
         _rhs[i] = 0;
         _p[i] = 0;
@@ -38,18 +37,19 @@ template <typename T, int d>
 FluidSolver<T, d>::~FluidSolver()
 {
     for (int axis = 0; axis < d; axis++)
-        delete velocityField[axis];
+        delete _v[axis];
 
-    delete density_field;
+    delete _d;
 
     delete _rhs;
     delete _p;
+    delete _BCflag;
 }
 //######################################################################
 template <typename T, int d>
 T FluidSolver<T, d>::getRGBcolorDensity(T_INDEX &index)
 {
-    return (*density_field).rgb_at(index);
+    return (*_d).rgb_at(index);
 }
 
 //######################################################################
@@ -61,13 +61,13 @@ void FluidSolver<T, d>::initialize()
 
     // for (int i = 0; i < d; i++)
     // {
-    //     (*velocityField[i]).fill(0.5);
+    //     (*_v[i]).fill(0.5);
     // }
-    (*velocityField[0]).fill(0);
-    (*velocityField[1]).fill(0.1);
-    // (*velocityField[2]).fill(0.5);
+    (*_v[0]).fill(0);
+    (*_v[1]).fill(0.1);
+    // (*_v[2]).fill(0.5);
 
-    (*density_field).fill(0);
+    (*_d).fill(0);
 }
 //######################################################################
 // TODO
@@ -75,11 +75,11 @@ void FluidSolver<T, d>::initialize()
 template <typename T, int d>
 void FluidSolver<T, d>::advection(T timestep)
 {
-    (*density_field).advect(timestep, velocityField);
+    (*_d).advect(timestep, _v);
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField[i]).advect(timestep, velocityField);
+        (*_v[i]).advect(timestep, _v);
     }
 }
 
@@ -110,9 +110,9 @@ int FluidSolver<T, d>::index2offset(const T_INDEX &index)
     // Becuase index in the grid start from (1,1)...
     T_INDEX tmp_index = index - T_INDEX(1);
 
-    int os = tmp_index[1] * storing_counts[0] + tmp_index[0];
+    int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
     if (d == 3)
-        os += tmp_index[2] * storing_counts[0] * storing_counts[1];
+        os += tmp_index[2] * whole_domain[0] * whole_domain[1];
     return os;
 }
 
@@ -124,18 +124,18 @@ Vector<int, d> FluidSolver<T, d>::offset2index(const int os)
     T_INDEX tmp_index = T_INDEX();
 
     // x <- os mod m
-    tmp_index[0] = os % storing_counts[0];
+    tmp_index[0] = os % whole_domain[0];
 
     if (d == 2)
         // y <- (os - x) / m
-        tmp_index[1] = (os - tmp_index[0]) / storing_counts[1];
+        tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
     else
     {
         // y <- (os - x) mod n
-        tmp_index[1] = (os - tmp_index[0]) % storing_counts[1];
+        tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
 
         // z <- (os - x - y * m) / (m*n)
-        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * storing_counts[0]) / storing_counts[0] / storing_counts[1];
+        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / whole_domain[0] / whole_domain[1];
     }
 
     // Becuase index in the grid start from (1,1)...
@@ -176,7 +176,7 @@ void FluidSolver<T, d>::calculateDivergence()
 {
 
     T_INDEX currIndex;
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), storing_counts)); iterator.Valid(); iterator.Next())
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), whole_domain)); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
         int idx = index2offset(currIndex);
@@ -187,8 +187,8 @@ void FluidSolver<T, d>::calculateDivergence()
             T_INDEX n_index = Next_Cell(axis, currIndex);
             if ((*grid).Inside_Domain(n_index))
             {
-                _rhs[idx] += ((*velocityField[axis]).at(n_index) - (*velocityField[axis]).at(currIndex)) * (*grid).one_over_dX[axis];
-                // _rhs[idx] += ((*velocityField[axis]).new_at(n_index) - (*velocityField[axis]).new_at(currIndex)) * (*grid).one_over_dX[axis];
+                _rhs[idx] += ((*_v[axis]).at(n_index) - (*_v[axis]).at(currIndex)) * (*grid).one_over_dX[axis];
+                // _rhs[idx] += ((*_v[axis]).new_at(n_index) - (*_v[axis]).new_at(currIndex)) * (*grid).one_over_dX[axis];
             }
         }
     }
@@ -259,13 +259,13 @@ void FluidSolver<T, d>::updateVelocity(T timestep)
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         index = T_INDEX() + iterator.Index();
-        // _p[index2offset(index)] = size * _rhs[index2offset(index)];
+        // _p[index2offset(index)] = size_whole_domain * _rhs[index2offset(index)];
 
         for (int axis = 0; axis < d; axis++)
         {
             if ((*grid).Inside_Domain(Previous_Cell(axis, index)))
             {
-                (*velocityField[axis]).new_at(index) -= timestep * (_p[index2offset(index)] - _p[index2offset(Previous_Cell(axis, index))]) *
+                (*_v[axis]).new_at(index) -= timestep * (_p[index2offset(index)] - _p[index2offset(Previous_Cell(axis, index))]) *
                                                         (*grid).one_over_dX(axis);
             }
         }
@@ -274,21 +274,21 @@ void FluidSolver<T, d>::updateVelocity(T timestep)
 template <typename T, int d>
 void FluidSolver<T, d>::flip()
 {
-    (*density_field).flip();
+    (*_d).flip();
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField[i]).flip();
+        (*_v[i]).flip();
     }
 }
 template <typename T, int d>
 void FluidSolver<T, d>::addInflow(const T_INDEX &index, const T density, const TV &velocity)
 {
-    (*density_field).modify_at(index) = density;
+    (*_d).modify_at(index) = density;
 
     for (int i = 0; i < d; i++)
     {
-        (*velocityField[i]).modify_at(index) = velocity[i];
+        (*_v[i]).modify_at(index) = velocity[i];
     }
 }
 template <typename T, int d>
@@ -334,19 +334,19 @@ void FluidSolver<T, d>::SetVelocityBoundary()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[0]).new_at(currIndex) = (*velocityField[0]).new_at(Previous_Cell(1, currIndex));
+        (*_v[0]).new_at(currIndex) = (*_v[0]).new_at(Previous_Cell(1, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[1]).new_at(currIndex) = (*velocityField[1]).new_at(Next_Cell(0, currIndex));
+        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(Next_Cell(0, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[1]).new_at(currIndex) = (*velocityField[1]).new_at(Previous_Cell(0, currIndex));
+        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(Previous_Cell(0, currIndex));
     }
 }
 template <typename T, int d>
@@ -363,19 +363,19 @@ void FluidSolver<T, d>::SetVelocityBoundary_as0()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[1]).new_at(currIndex) = 0;
+        (*_v[1]).new_at(currIndex) = 0;
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[0]).new_at(currIndex) = 0;
+        (*_v[0]).new_at(currIndex) = 0;
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*velocityField[0]).new_at(currIndex) = 0;
+        (*_v[0]).new_at(currIndex) = 0;
     }
 }
 template <typename T, int d>
@@ -421,7 +421,7 @@ void FluidSolver<T, d>::update(T timestep)
     flip();
     // SetVelocityBoundary_as0();
 
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size_interior_domain; i++)
     {
         _p[i] = 0;
     }

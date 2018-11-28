@@ -17,17 +17,26 @@ class FluidSolver
 {
   using T_INDEX = Vector<int, d>;
   using TV = Vector<T, d>;
+  enum Boundary_Condition{Interior, Exteria, Dirichlet};
 
 public:
   int number_of_ghost_cells;
-  int size;
+  int size_whole_domain;
+  int size_interior_domain;
 
-  FluidQuantity<T, d> *velocityField[d];
-  FluidQuantity<T, d> *density_field;
+  // Velocity Field
+  FluidQuantity<T, d> *_v[d];
+  // Density Field
+  FluidQuantity<T, d> *_d;
+  // The shared grid
   Grid<T, d> *grid;
 
-  T_INDEX storing_counts;
+  // Domain: Interior Domain + Ghost Domain = Whole Domain
+  T_INDEX interior_domain;
+  T_INDEX whole_domain;
   T density;
+  // flag of Boundary Condition;
+  Boundary_Condition *_BCflag;
   T *_rhs;
   T *_p;
 
@@ -70,10 +79,8 @@ public:
   //-----------------------------------------------
   T_INDEX Next_Cell(const int axis, const T_INDEX &index);
   T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
-  int index2offset(const T_INDEX &index);
   T_INDEX offset2index(const int os);
-
-  void projection_INCSAMPLE(int limit, T timestep);
+  int index2offset(const T_INDEX &index);
 };
 
 } // namespace Nova
