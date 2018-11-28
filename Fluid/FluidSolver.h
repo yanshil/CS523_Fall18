@@ -32,7 +32,7 @@ public:
   // Density Field
   FluidQuantity<T, d> *_d;
   // The shared grid
-  Grid<T, d> *grid;
+  FluidSimulator_Grid<T, d> *grid;
 
   // Domain: Interior Domain + Ghost Domain = Whole Domain
   T_INDEX interior_domain;
@@ -45,7 +45,7 @@ public:
   T *_p;
 
   FluidSolver();
-  FluidSolver(Grid<T, d> &grid, T density, int number_of_ghost_cells);
+  FluidSolver(FluidSimulator_Grid<T, d> &grid, T density, int number_of_ghost_cells);
   ~FluidSolver();
 
   T getRGBcolorDensity(T_INDEX &index);
@@ -81,10 +81,10 @@ public:
   void update(T timestep);
 
   //-----------------------------------------------
-  T_INDEX Next_Cell(const int axis, const T_INDEX &index);
-  T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
-  T_INDEX offset2index(const int os);
-  int index2offset(const T_INDEX &index);
+  // T_INDEX Next_Cell(const int axis, const T_INDEX &index);
+  // T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
+  // T_INDEX offset2index(const int os);
+  // int index2offset(const T_INDEX &index);
 };
 
 } // namespace Nova

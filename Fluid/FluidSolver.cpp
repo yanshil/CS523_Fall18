@@ -5,7 +5,7 @@
 using namespace Nova;
 //######################################################################
 template <typename T, int d>
-FluidSolver<T, d>::FluidSolver(Grid<T, d> &grid, T density, int number_of_ghost_cells)
+FluidSolver<T, d>::FluidSolver(FluidSimulator_Grid<T, d> &grid, T density, int number_of_ghost_cells)
     : grid(&grid), density(density), number_of_ghost_cells(number_of_ghost_cells)
 {
     std::cout << "Constructor of FluidSolver" << std::endl;
@@ -75,7 +75,7 @@ void FluidSolver<T, d>::initialize()
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), interior_domain)); iterator.Valid(); iterator.Next())
     {
         index = T_INDEX() + iterator.Index();
-        int idx = index2offset(index);
+        int idx = grid->index2offset(index);
 
         for (int axis = 0; axis < d; axis++)
         {
@@ -101,66 +101,66 @@ void FluidSolver<T, d>::advection(T timestep)
 }
 
 //----------Auxiliary Function--------------------
-// TODO
-template <typename T, int d>
-Vector<int, d> FluidSolver<T, d>::Next_Cell(const int axis, const T_INDEX &index)
-{
-    T_INDEX shifted_index(index);
-    shifted_index(axis) += 1;
+// // TODO
+// template <typename T, int d>
+// Vector<int, d> FluidSolver<T, d>::grid->Next_Cell(const int axis, const T_INDEX &index)
+// {
+//     T_INDEX shifted_index(index);
+//     shifted_index(axis) += 1;
 
-    return shifted_index;
-}
-// TODO
-template <typename T, int d>
-Vector<int, d> FluidSolver<T, d>::Previous_Cell(const int axis, const T_INDEX &index)
-{
-    T_INDEX shifted_index(index);
-    shifted_index(axis) -= 1;
+//     return shifted_index;
+// }
+// // TODO
+// template <typename T, int d>
+// Vector<int, d> FluidSolver<T, d>::grid->Previous_Cell(const int axis, const T_INDEX &index)
+// {
+//     T_INDEX shifted_index(index);
+//     shifted_index(axis) -= 1;
 
-    return shifted_index;
-}
+//     return shifted_index;
+// }
 
-// TODO:
-template <typename T, int d>
-int FluidSolver<T, d>::index2offset(const T_INDEX &index)
-{
-    // Becuase index in the grid start from (1,1)...
-    // T_INDEX tmp_index = index - T_INDEX(1);
-    T_INDEX tmp_index = index;
-    tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);
+// // TODO:
+// template <typename T, int d>
+// int FluidSolver<T, d>::grid->index2offset(const T_INDEX &index)
+// {
+//     // Becuase index in the grid start from (1,1)...
+//     // T_INDEX tmp_index = index - T_INDEX(1);
+//     T_INDEX tmp_index = index;
+//     tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);
 
-    int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
-    if (d == 3)
-        os += tmp_index[2] * whole_domain[0] * whole_domain[1];
-    return os;
-}
+//     int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
+//     if (d == 3)
+//         os += tmp_index[2] * whole_domain[0] * whole_domain[1];
+//     return os;
+// }
 
-template <typename T, int d>
-Vector<int, d> FluidSolver<T, d>::offset2index(const int os)
-{
-    // 3D: os = z * m * n + y * m + x
-    // 2D: os = y * m + x
-    T_INDEX tmp_index = T_INDEX();
+// template <typename T, int d>
+// Vector<int, d> FluidSolver<T, d>::grid->offset2index(const int os)
+// {
+//     // 3D: os = z * m * n + y * m + x
+//     // 2D: os = y * m + x
+//     T_INDEX tmp_index = T_INDEX();
 
-    // x <- os mod m
-    tmp_index[0] = os % whole_domain[0];
+//     // x <- os mod m
+//     tmp_index[0] = os % whole_domain[0];
 
-    if (d == 2)
-        // y <- (os - x) / m
-        tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
-    else
-    {
-        // y <- (os - x) mod n
-        tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
+//     if (d == 2)
+//         // y <- (os - x) / m
+//         tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
+//     else
+//     {
+//         // y <- (os - x) mod n
+//         tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
 
-        // z <- (os - x - y * m) / (m*n)
-        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / whole_domain[0] / whole_domain[1];
-    }
+//         // z <- (os - x - y * m) / (m*n)
+//         tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / whole_domain[0] / whole_domain[1];
+//     }
 
-    // Becuase index in the grid start from (1,1)...
-    tmp_index += T_INDEX(1) - T_INDEX(number_of_ghost_cells);
-    return tmp_index;
-}
+//     // Becuase index in the grid start from (1,1)...
+//     tmp_index += T_INDEX(1) - T_INDEX(number_of_ghost_cells);
+//     return tmp_index;
+// }
 
 // TODO
 template <typename T, int d>
@@ -198,12 +198,12 @@ void FluidSolver<T, d>::calculateDivergence()
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), whole_domain)); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        int idx = index2offset(currIndex);
+        int idx = grid->index2offset(currIndex);
         _rhs[idx] = 0;
 
         for (int axis = 0; axis < d; axis++)
         {
-            T_INDEX n_index = Next_Cell(axis, currIndex);
+            T_INDEX n_index = grid->Next_Cell(axis, currIndex);
             if ((*grid).Inside_Domain(n_index))
             {
                 _rhs[idx] += ((*_v[axis]).at(n_index) - (*_v[axis]).at(currIndex)) * (*grid).one_over_dX[axis];
@@ -237,21 +237,21 @@ void FluidSolver<T, d>::Project(int limit)
 
             T Aii = 0;
             T AijSum = 0;
-            int os = index2offset(index);
+            int os = grid->index2offset(index);
 
             for (int axis = 0; axis < d; axis++)
             {
-                T_INDEX p_index = Previous_Cell(axis, index);
-                T_INDEX n_index = Next_Cell(axis, index);
+                T_INDEX p_index = grid->Previous_Cell(axis, index);
+                T_INDEX n_index = grid->Next_Cell(axis, index);
                 if ((*grid).Inside_Domain(p_index))
                 {
                     Aii -= scale;
-                    AijSum += scale * _p[index2offset(p_index)];
+                    AijSum += scale * _p[grid->index2offset(p_index)];
                 }
                 if ((*grid).Inside_Domain(n_index))
                 {
                     Aii -= scale;
-                    AijSum += scale * _p[index2offset(n_index)];
+                    AijSum += scale * _p[grid->index2offset(n_index)];
                 }
             }
 
@@ -278,13 +278,13 @@ void FluidSolver<T, d>::updateVelocity(T timestep)
     for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), (*grid).Number_Of_Cells())); iterator.Valid(); iterator.Next())
     {
         index = T_INDEX() + iterator.Index();
-        // _p[index2offset(index)] = size_whole_domain * _rhs[index2offset(index)];
+        // _p[grid->index2offset(index)] = size_whole_domain * _rhs[grid->index2offset(index)];
 
         for (int axis = 0; axis < d; axis++)
         {
-            if ((*grid).Inside_Domain(Previous_Cell(axis, index)))
+            if ((*grid).Inside_Domain(grid->Previous_Cell(axis, index)))
             {
-                (*_v[axis]).new_at(index) -= timestep * (_p[index2offset(index)] - _p[index2offset(Previous_Cell(axis, index))]) *
+                (*_v[axis]).new_at(index) -= timestep * (_p[grid->index2offset(index)] - _p[grid->index2offset(grid->Previous_Cell(axis, index))]) *
                                              (*grid).one_over_dX(axis);
             }
         }
@@ -324,19 +324,19 @@ void FluidSolver<T, d>::SetPressureBoundary()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _p[index2offset(currIndex)] = _p[index2offset(Previous_Cell(1, currIndex))];
+        _p[grid->index2offset(currIndex)] = _p[grid->index2offset(grid->Previous_Cell(1, currIndex))];
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _p[index2offset(currIndex)] = _p[index2offset(Next_Cell(0, currIndex))];
+        _p[grid->index2offset(currIndex)] = _p[grid->index2offset(grid->Next_Cell(0, currIndex))];
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _p[index2offset(currIndex)] = _p[index2offset(Previous_Cell(0, currIndex))];
+        _p[grid->index2offset(currIndex)] = _p[grid->index2offset(grid->Previous_Cell(0, currIndex))];
     }
 }
 template <typename T, int d>
@@ -353,19 +353,19 @@ void FluidSolver<T, d>::SetVelocityBoundary()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*_v[0]).new_at(currIndex) = (*_v[0]).new_at(Previous_Cell(1, currIndex));
+        (*_v[0]).new_at(currIndex) = (*_v[0]).new_at(grid->Previous_Cell(1, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(Next_Cell(0, currIndex));
+        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(grid->Next_Cell(0, currIndex));
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(Previous_Cell(0, currIndex));
+        (*_v[1]).new_at(currIndex) = (*_v[1]).new_at(grid->Previous_Cell(0, currIndex));
     }
 }
 template <typename T, int d>
@@ -411,19 +411,19 @@ void FluidSolver<T, d>::SetDivBoundary()
     for (Range_Iterator<d> iterator(vTop); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _rhs[index2offset(currIndex)] = _rhs[index2offset(Previous_Cell(1, currIndex))];
+        _rhs[grid->index2offset(currIndex)] = _rhs[grid->index2offset(grid->Previous_Cell(1, currIndex))];
     }
 
     for (Range_Iterator<d> iterator(uLeft); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _rhs[index2offset(currIndex)] = _rhs[index2offset(Next_Cell(0, currIndex))];
+        _rhs[grid->index2offset(currIndex)] = _rhs[grid->index2offset(grid->Next_Cell(0, currIndex))];
     }
 
     for (Range_Iterator<d> iterator(uRight); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
-        _rhs[index2offset(currIndex)] = _rhs[index2offset(Previous_Cell(0, currIndex))];
+        _rhs[grid->index2offset(currIndex)] = _rhs[grid->index2offset(grid->Previous_Cell(0, currIndex))];
     }
 }
 template <typename T, int d>

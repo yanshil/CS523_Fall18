@@ -7,7 +7,7 @@
 #ifndef __FluidQuantity__
 #define __FluidQuantity__
 
-#include <nova/Tools/Grids/Grid.h>
+#include "FluidSimulator_Grid.h"
 #include <nova/Tools/Utilities/Range_Iterator.h>
 
 namespace Nova
@@ -27,14 +27,14 @@ class FluidQuantity
     int size_whole_domain;
     int size_interior_domain;
     int size_simulation_domain;
-    Grid<T, d> *grid;
+    FluidSimulator_Grid<T, d> *grid;
 
     T_INDEX interior_domain;
     T_INDEX whole_domain;
     T_INDEX simulation_domain;
 
     FluidQuantity();
-    FluidQuantity(Grid<T, d> &grid, int axis, int number_of_ghost_cells);
+    FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis, int number_of_ghost_cells);
     ~FluidQuantity();
 
     /////////////////////////////////////////////////
@@ -65,11 +65,11 @@ class FluidQuantity
     T linter(const TV &location);
     bool Inside_Domain(const T_INDEX &index);
 
-    int index2offset(const T_INDEX &index);
-    T_INDEX offset2index(const int os);
+    // int index2offset(const T_INDEX &index);
+    // T_INDEX offset2index(const int os);
 
-    T_INDEX Next_Cell(const int axis, const T_INDEX &index);
-    T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
+    // T_INDEX Next_Cell(const int axis, const T_INDEX &index);
+    // T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
     /////////////////////////////////////////////////
     /// Printing Function
     /////////////////////////////////////////////////

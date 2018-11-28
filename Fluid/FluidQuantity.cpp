@@ -19,7 +19,7 @@ FluidQuantity<T, d>::FluidQuantity()
 /// Constructor
 ////////////////////////////////////////////////////////////////////////
 template <typename T, int d>
-FluidQuantity<T, d>::FluidQuantity(Grid<T, d> &grid, int axis, int number_of_ghost_cells)
+FluidQuantity<T, d>::FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis, int number_of_ghost_cells)
     : grid(&grid), axis(axis), number_of_ghost_cells(number_of_ghost_cells)
 {
     std::cout << "Correct Constructor!" << std::endl;
@@ -76,9 +76,9 @@ T FluidQuantity<T, d>::at(const T_INDEX &index)
     {
         TV location = grid->Center(index);
         T_INDEX clamped_index = grid->Clamp_To_Cell(location, number_of_ghost_cells);
-        return Phi[index2offset(clamped_index)];
+        return Phi[grid->index2offset(clamped_index)];
     }
-    return Phi[index2offset(index)];
+    return Phi[grid->index2offset(index)];
 }
 /**
  * modify_at
@@ -99,7 +99,7 @@ T &FluidQuantity<T, d>::modify_at(const T_INDEX &index)
         // Raise exception
         throw std::runtime_error("Try to write at an Out_of_domain area");
     }
-    return Phi[index2offset(index)];
+    return Phi[grid->index2offset(index)];
 }
 //######################################################################
 // new_at: Read & Write access in the quantity field for Phi_new
@@ -117,7 +117,7 @@ T &FluidQuantity<T, d>::new_at(const T_INDEX &index)
     //     // Raise exception
     //     throw std::runtime_error("Try to write at an Out_of_domain area");
     // }
-    return Phi_new[index2offset(index)];
+    return Phi_new[grid->index2offset(index)];
 }
 //######################################################################
 // rgb_at: Get RGB color scaled to (0,1)
@@ -154,75 +154,66 @@ bool FluidQuantity<T, d>::Inside_Domain(const T_INDEX &index)
     }
     return true;
 }
-/**
- * index2offset
- * Get exact offset for Column-based 1D array
- * Index start from (1,1) to _counts_
- * return (z * xSize * ySize) + (y * xSize) + x;
- */
-template <typename T, int d>
-int FluidQuantity<T, d>::index2offset(const T_INDEX &index)
-{
-    // Becuase index in the grid start from (1,1)...
-    // T_INDEX tmp_index = index - T_INDEX(1);
-    T_INDEX tmp_index = index;
-    tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);
 
-    int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
-    if (d == 3)
-        os += tmp_index[2] * whole_domain[0] * whole_domain[1];
-    return os;
-}
-/**
- * offset2index
- * return cell index for given offset
- * Index start from (1,1) to _counts_
- */
-template <typename T, int d>
-Vector<int, d> FluidQuantity<T, d>::offset2index(const int os)
-{
-    // 3D: os = z * m * n + y * m + x
-    // 2D: os = y * m + x
-    T_INDEX tmp_index = T_INDEX();
+// template <typename T, int d>
+// int FluidQuantity<T, d>::grid->index2offset(const T_INDEX &index)
+// {
+//     // Becuase index in the grid start from (1,1)...
+//     // T_INDEX tmp_index = index - T_INDEX(1);
+//     T_INDEX tmp_index = index;
+//     tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);
 
-    // x <- os mod m
-    tmp_index[0] = os % whole_domain[0];
+//     int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
+//     if (d == 3)
+//         os += tmp_index[2] * whole_domain[0] * whole_domain[1];
+//     return os;
+// }
 
-    if (d == 2)
-        // y <- (os - x) / m
-        tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
-    else
-    {
-        // y <- (os - x) mod n
-        tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
+// template <typename T, int d>
+// Vector<int, d> FluidQuantity<T, d>::grid->offset2index(const int os)
+// {
+//     // 3D: os = z * m * n + y * m + x
+//     // 2D: os = y * m + x
+//     T_INDEX tmp_index = T_INDEX();
 
-        // z <- (os - x - y * m) / (m*n)
-        tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / simulation_domain[0] / simulation_domain[1];
-    }
+//     // x <- os mod m
+//     tmp_index[0] = os % whole_domain[0];
 
-    // Becuase index in the grid start from (1,1)...
-    tmp_index += T_INDEX(1) - T_INDEX(number_of_ghost_cells);
-    return tmp_index;
-}
+//     if (d == 2)
+//         // y <- (os - x) / m
+//         tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
+//     else
+//     {
+//         // y <- (os - x) mod n
+//         tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
+
+//         // z <- (os - x - y * m) / (m*n)
+//         tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / simulation_domain[0] / simulation_domain[1];
+//     }
+
+//     // Becuase index in the grid start from (1,1)...
+//     tmp_index += T_INDEX(1) - T_INDEX(number_of_ghost_cells);
+//     return tmp_index;
+// }
 /////////////////////////////////////////////////
 /// Get Next / Previous Cell for given axis
 /////////////////////////////////////////////////
-template <typename T, int d>
-Vector<int, d> FluidQuantity<T, d>::Next_Cell(const int axis, const T_INDEX &index)
-{
-    T_INDEX shifted_index(index);
-    shifted_index(axis) += 1;
+// template <typename T, int d>
+// Vector<int, d> FluidQuantity<T, d>::grid->Next_Cell(const int axis, const T_INDEX &index)
+// {
+//     T_INDEX shifted_index(index);
+//     shifted_index(axis) += 1;
 
-    return shifted_index;
-}
-template <typename T, int d>
-Vector<int, d> FluidQuantity<T, d>::Previous_Cell(const int axis, const T_INDEX &index)
-{
-    T_INDEX shifted_index(index);
-    shifted_index(axis) -= 1;
+//     return shifted_index;
+// }
+// template <typename T, int d>
+// Vector<int, d> FluidQuantity<T, d>::grid->Previous_Cell(const int axis, const T_INDEX &index)
+// {
+//     T_INDEX shifted_index(index);
+//     shifted_index(axis) -= 1;
 
-    return shifted_index;
-}
+//     return shifted_index;
+// }
 //######################################################################
 // computeVelocity:
 //######################################################################
@@ -291,9 +282,9 @@ T FluidQuantity<T, d>::linter(const TV &location)
     TV offset = location - c000_fixlocation;
     offset *= grid->one_over_dX;
 
-    c100 = Next_Cell(0, c000);
-    c010 = Next_Cell(1, c000);
-    c110 = Next_Cell(0, c010);
+    c100 = grid->Next_Cell(0, c000);
+    c010 = grid->Next_Cell(1, c000);
+    c110 = grid->Next_Cell(0, c010);
     T px00 = linter(at(c000), at(c100), offset[0]);
     T px10 = linter(at(c010), at(c110), offset[0]);
     T py0 = linter(px00, px10, offset[1]);
@@ -307,10 +298,10 @@ T FluidQuantity<T, d>::linter(const TV &location)
 
     T_INDEX c001, c101, c011, c111;
 
-    c001 = Next_Cell(2, c000);
-    c101 = Next_Cell(2, c100);
-    c011 = Next_Cell(2, c010);
-    c111 = Next_Cell(2, c110);
+    c001 = grid->Next_Cell(2, c000);
+    c101 = grid->Next_Cell(2, c100);
+    c011 = grid->Next_Cell(2, c010);
+    c111 = grid->Next_Cell(2, c110);
 
     T px01 = linter(at(c001), at(c101), offset[0]);
     T px11 = linter(at(c011), at(c111), offset[0]);

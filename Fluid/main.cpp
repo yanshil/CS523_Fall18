@@ -23,9 +23,10 @@ double timestep = 0.12;
 double density = 1;
 
 int iterations = 0;
+int number_of_ghost_cells = 1;
 
-Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
-FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, 1);
+FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box(), number_of_ghost_cells);
+FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, number_of_ghost_cells);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
