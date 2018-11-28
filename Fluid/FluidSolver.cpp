@@ -81,13 +81,21 @@ void FluidSolver<T, d>::initialize()
         {
             // std::cout << "index = " << index << std::endl;
             double r_square = (index(0) - 16) * (index(0) - 16) + (index(1) - 16) * (index(1) - 16);
-            double r = std::sqrt(r_square);
-            double tmpV = (index(1 - axis) - 16) / r;
-            if(axis == 1)
+            if (r_square < 0.0001)
             {
-                tmpV = -1.0 * tmpV;
+                (*_v[axis]).modify_at(index) = 0;
             }
-            (*_v[axis]).modify_at(index) = tmpV;
+            else
+            {
+                double r = std::sqrt(r_square);
+                double tmpV = (index(1 - axis) - 16) / r;
+                if (axis == 1)
+                {
+                    tmpV = -1.0 * tmpV;
+                }
+                (*_v[axis]).modify_at(index) = tmpV;
+            }
+
             // std::cout << "u(" << axis << ") = " << tmpV << "\t";
         }
         // std::cout << std::endl;
@@ -177,7 +185,7 @@ T calculate1Norm(T a[], T b[], int size)
 template <typename T, int d>
 void FluidSolver<T, d>::Project(int limit)
 {
-    // TODO: Modify 
+    // TODO: Modify
     calculateDivergence();
 
     T scale = (*grid).one_over_dX[0] * (*grid).one_over_dX[0];
