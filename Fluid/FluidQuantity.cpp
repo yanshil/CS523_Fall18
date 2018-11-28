@@ -155,65 +155,6 @@ bool FluidQuantity<T, d>::Inside_Domain(const T_INDEX &index)
     return true;
 }
 
-// template <typename T, int d>
-// int FluidQuantity<T, d>::grid->index2offset(const T_INDEX &index)
-// {
-//     // Becuase index in the grid start from (1,1)...
-//     // T_INDEX tmp_index = index - T_INDEX(1);
-//     T_INDEX tmp_index = index;
-//     tmp_index += T_INDEX(number_of_ghost_cells) - T_INDEX(1);
-
-//     int os = tmp_index[1] * whole_domain[0] + tmp_index[0];
-//     if (d == 3)
-//         os += tmp_index[2] * whole_domain[0] * whole_domain[1];
-//     return os;
-// }
-
-// template <typename T, int d>
-// Vector<int, d> FluidQuantity<T, d>::grid->offset2index(const int os)
-// {
-//     // 3D: os = z * m * n + y * m + x
-//     // 2D: os = y * m + x
-//     T_INDEX tmp_index = T_INDEX();
-
-//     // x <- os mod m
-//     tmp_index[0] = os % whole_domain[0];
-
-//     if (d == 2)
-//         // y <- (os - x) / m
-//         tmp_index[1] = (os - tmp_index[0]) / whole_domain[1];
-//     else
-//     {
-//         // y <- (os - x) mod n
-//         tmp_index[1] = (os - tmp_index[0]) % whole_domain[1];
-
-//         // z <- (os - x - y * m) / (m*n)
-//         tmp_index[2] = (os - tmp_index[0] - tmp_index[1] * whole_domain[0]) / simulation_domain[0] / simulation_domain[1];
-//     }
-
-//     // Becuase index in the grid start from (1,1)...
-//     tmp_index += T_INDEX(1) - T_INDEX(number_of_ghost_cells);
-//     return tmp_index;
-// }
-/////////////////////////////////////////////////
-/// Get Next / Previous Cell for given axis
-/////////////////////////////////////////////////
-// template <typename T, int d>
-// Vector<int, d> FluidQuantity<T, d>::grid->Next_Cell(const int axis, const T_INDEX &index)
-// {
-//     T_INDEX shifted_index(index);
-//     shifted_index(axis) += 1;
-
-//     return shifted_index;
-// }
-// template <typename T, int d>
-// Vector<int, d> FluidQuantity<T, d>::grid->Previous_Cell(const int axis, const T_INDEX &index)
-// {
-//     T_INDEX shifted_index(index);
-//     shifted_index(axis) -= 1;
-
-//     return shifted_index;
-// }
 //######################################################################
 // computeVelocity:
 //######################################################################

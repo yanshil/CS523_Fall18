@@ -80,11 +80,6 @@ public:
 
   void update(T timestep);
 
-  //-----------------------------------------------
-  // T_INDEX Next_Cell(const int axis, const T_INDEX &index);
-  // T_INDEX Previous_Cell(const int axis, const T_INDEX &index);
-  // T_INDEX offset2index(const int os);
-  // int index2offset(const T_INDEX &index);
 };
 
 } // namespace Nova
