@@ -114,10 +114,10 @@ T &FluidQuantity<T, d>::new_at(const T_INDEX &index)
     // }
     if (!grid->Inside_Domain(index, number_of_ghost_cells))
     {
-        // std::cout << "Modifying " << index << std::endl;
-        // std::cout << number_of_ghost_cells << std::endl;
-        // std::cout << grid->index2offset(index) << std::endl;
-        // std::cout << size_whole_domain << std::endl;
+        std::cout << "Modifying " << index << std::endl;
+        std::cout << number_of_ghost_cells << std::endl;
+        std::cout << grid->index2offset(index) << std::endl;
+        std::cout << size_whole_domain << std::endl;
         // Raise exception
         throw std::runtime_error("Try to write at an Out_of_domain area");
     }
@@ -276,7 +276,7 @@ template <typename T, int d>
 void FluidQuantity<T, d>::advect(T timestep, FluidQuantity *velocityField[d])
 {
     T_INDEX currIndex;
-    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), simulation_domain)); iterator.Valid(); iterator.Next())
+    for (Range_Iterator<d> iterator(Range<int, d>(T_INDEX(1), interior_domain)); iterator.Valid(); iterator.Next())
     {
         currIndex = T_INDEX() + iterator.Index();
         advect(currIndex, timestep, velocityField);

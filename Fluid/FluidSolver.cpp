@@ -261,17 +261,20 @@ template <typename T, int d>
 void FluidSolver<T, d>::setBoundaryCondition()
 {
     T_INDEX max_corner = grid->Cell_Indices(number_of_ghost_cells).max_corner;
+    T_INDEX min_corner = grid->Cell_Indices(number_of_ghost_cells).min_corner;
+    int m0 = min_corner(0);
+    int n0 = min_corner(1);
     int m = max_corner(0);
     int n = max_corner(1);
 
     // 0, 33 -> 33, 33
-    Range<int, d> vTop(T_INDEX{0, n}, max_corner);
-    // 0,0 -> 33, 0
-    Range<int, d> uLeft(T_INDEX(0), T_INDEX{0, n});
+    Range<int, d> vTop(T_INDEX{m0, n}, max_corner);
+    // 0,0 -> 0, 33
+    Range<int, d> uLeft(min_corner, T_INDEX{m0, n});
     // 33,0 -> 33, 33
-    Range<int, d> uRight(T_INDEX{m, 0}, max_corner);
-    // 0,0 -> m,n
-    Range<int, d> vBottom(T_INDEX(0), T_INDEX{m, 0});
+    Range<int, d> uRight(T_INDEX{m, n0}, max_corner);
+    // 0,0 -> m, 0
+    Range<int, d> vBottom(min_corner, T_INDEX{m, n0});
 
     T_INDEX currIndex;
     // On Top: u -> ghost; v <- 0
@@ -312,17 +315,29 @@ template <typename T, int d>
 void FluidSolver<T, d>::spread2Ghost()
 {
     T_INDEX max_corner = grid->Cell_Indices(number_of_ghost_cells).max_corner;
+    T_INDEX min_corner = grid->Cell_Indices(number_of_ghost_cells).min_corner;
+    int m0 = min_corner(0);
+    int n0 = min_corner(1);
     int m = max_corner(0);
     int n = max_corner(1);
 
     // 0, 33 -> 33, 33
-    Range<int, d> vTop(T_INDEX{0, n}, max_corner);
-    // 0,0 -> 33, 0
-    Range<int, d> uLeft(T_INDEX(0), T_INDEX{0, n});
+    Range<int, d> vTop(T_INDEX{m0, n}, max_corner);
+    // 0,0 -> 0, 33
+    Range<int, d> uLeft(min_corner, T_INDEX{m0, n});
     // 33,0 -> 33, 33
-    Range<int, d> uRight(T_INDEX{m, 0}, max_corner);
-    // 0,0 -> m,n
-    Range<int, d> vBottom(T_INDEX(0), T_INDEX{m, 0});
+    Range<int, d> uRight(T_INDEX{m, n0}, max_corner);
+    // 0,0 -> m, 0
+    Range<int, d> vBottom(min_corner, T_INDEX{m, n0});
+
+    // // 0, 33 -> 33, 33
+    // Range<int, d> vTop(T_INDEX{min_corner(0), n}, max_corner);
+    // // 0,0 -> 0,
+    // Range<int, d> uLeft(min_corner, T_INDEX{m, min_corner(1)});
+    // // m. 0 -> m, n
+    // Range<int, d> uRight(T_INDEX{m, min_corner(1)}, max_corner);
+    // // 0,0 -> m,0
+    // Range<int, d> vBottom(min_corner, T_INDEX{m, 0});
 
     T_INDEX currIndex;
     // On Top: u -> ghost; v <- 0
