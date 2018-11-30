@@ -1,7 +1,11 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "../lodepng/lodepng.h"
+#include <string.h>
+
+#define TEST_CIRCLE false
+#define TEST_CIRCLE_DENSITY false
+#define TEST_SINGLEINFLOW true
 
 using namespace std;
 
@@ -28,8 +32,8 @@ class FluidQuantity
     }
 
   public:
-    FluidQuantity(int m, int n, int axis, double dX)
-        : m(n), n(n), axis(axis), dX(dX)
+    FluidQuantity(int m, int n, int axis)
+        : m(n), n(n), axis(axis)
     {
         ox = (axis == 0) ? 0 : 0.5;
         oy = (axis == 1) ? 0 : 0.5;
@@ -37,6 +41,8 @@ class FluidQuantity
 
         _Phi = new double[m * n];
         _Phi_new = new double[m * n];
+
+        memset(_Phi, 0, m * n * sizeof(double));
     }
     ~FluidQuantity()
     {
@@ -56,13 +62,11 @@ class FluidQuantity
 
     double at(int x, int y) const
     {
-        printf("at: x = %d, y = %d \n", x, y);
         return _Phi[x + y * m];
     }
 
     double &at(int x, int y)
     {
-        printf("&at: x = %d, y = %d \n", x, y);
         return _Phi[x + y * m];
     }
 
@@ -105,14 +109,12 @@ class FluidQuantity
 
                 // Compute velocity
                 // TODO / dX ????
-                printf("Advect: x = %f, y = %f, ox = %f \n", x, y, ox);
                 double velocity_u = u.linp(x, y) / dX;
                 double velocity_v = v.linp(x, y) / dX;
 
                 // Traceback
                 x -= velocity_u * timestep;
                 y -= velocity_v * timestep;
-                printf("TraceBack: x = %f, y = %f, timestep = %f \n", x, y, timestep);
 
                 _Phi_new[idx] = linp(x, y);
             }
@@ -123,8 +125,9 @@ class FluidQuantity
     void addInflow(double x0, double y0, double x1, double y1, double v)
     {
         int ix0 = (int)(x0 / dX - ox);
-        int iy0 = (int)(y0 / dX - oy);
         int ix1 = (int)(x1 / dX - ox);
+
+        int iy0 = (int)(y0 / dX - oy);
         int iy1 = (int)(y1 / dX - oy);
 
         for (int y = max(iy0, 0); y < min(iy1, n); y++)
@@ -144,28 +147,76 @@ class FluidSolver
     int m;
     int n;
     double dX;
-    double density;
+    double rho; // rho
 
     double *_rhs;
     double *_p;
 
     void calculateRHS()
     {
+        memset(_rhs, 0, m * n * sizeof(double));
+
         for (int iy = 0; iy < n; iy++)
         {
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                _rhs[idx] = 0;
                 _rhs[idx] -= (_u->at(ix + 1, iy) - _u->at(ix, iy)) / dX;
                 _rhs[idx] -= (_v->at(ix, iy + 1) - _v->at(ix, iy)) / dX;
             }
         }
     }
 
+    // Circle Velocity Field?
+    void test_initialize_CircleVelocityField()
+    {
+        for (int iy = 0; iy < n; iy++)
+        {
+            for (int ix = 0; ix < m; ix++)
+            {
+                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+                if (r_square < 0.01)
+                {
+                    (_u->at(ix, iy) = 0);
+                    (_v->at(ix, iy) = 0);
+                }
+                else
+                {
+                    double r = sqrt(r_square);
+                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
+                    _v->at(ix, iy) = (ix - m / 2.0) / r;
+                }
+            }
+        }
+    }
+
+    void test_initialize_circleDensityField()
+    {
+        for (int iy = 0; iy < n; iy++)
+        {
+            for (int ix = 0; ix < m; ix++)
+            {
+                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+                if (r_square <= 900)
+                {
+                    _d->at(ix, iy) = 1;
+                }
+
+                if(r_square == 900)
+                {
+                    double r = sqrt(r_square);
+                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
+                    _v->at(ix, iy) = (ix - m / 2.0) / r;
+                }
+            }
+        }
+    }
+
     void project(int limit, double timestep)
     {
-        double scale = 1.0 / dX / dX * timestep;
+        double scale = timestep / rho / dX / dX;
 
         double maxDelta;
 
@@ -176,8 +227,6 @@ class FluidSolver
             {
                 for (int ix = 0; ix < m; ix++)
                 {
-                    // printf("x = %d, y = %d \n", ix, iy);
-
                     int idx = iy * m + ix;
                     double Aii = 0, sum = 0;
 
@@ -194,12 +243,12 @@ class FluidSolver
                     if (ix < m - 1)
                     {
                         Aii += scale;
-                        sum -= scale * _p[idx + 1]; // Previous u
+                        sum -= scale * _p[idx + 1]; // Next u
                     }
                     if (iy < n - 1)
                     {
                         Aii += scale;
-                        sum -= scale * _p[idx + m]; // Previous u
+                        sum -= scale * _p[idx + m]; // Next v
                     }
 
                     double newP = (_rhs[idx] - sum) / Aii;
@@ -211,11 +260,11 @@ class FluidSolver
             }
             if (maxDelta < 1e-5)
             {
-                printf("Exiting solver after %d iterations, maximum change is %f\n", iteration, maxDelta);
+                printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
                 return;
             }
         }
-        printf("Exceeded budget of %d iterations, maximum change was %f\n", limit, maxDelta);
+        printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
     }
 
     void setBoundaryCondition()
@@ -235,7 +284,7 @@ class FluidSolver
 
     void applyPressure(double timestep)
     {
-        double scale = 1.0 / dX * timestep;
+        double scale = timestep / rho / dX;
         for (int iy = 0; iy < n; iy++)
         {
             for (int ix = 0; ix < m; ix++)
@@ -253,15 +302,19 @@ class FluidSolver
     }
 
   public:
-    FluidSolver(int m, int n, double density)
-        : m(m), n(n), density(density)
+    FluidSolver(int m, int n, double rho)
+        : m(m), n(n), rho(rho)
     {
-        _d = new FluidQuantity(m, n, -1, dX);
-        _u = new FluidQuantity(m + 1, n, 0, dX);
-        _v = new FluidQuantity(m, n + 1, 1, dX);
+        _d = new FluidQuantity(m, n, -1);
+        _u = new FluidQuantity(m + 1, n, 0);
+        _v = new FluidQuantity(m, n + 1, 1);
 
         _rhs = new double[m * n];
         _p = new double[m * n];
+
+        dX = 1.0 / min(m, n);
+
+        memset(_p, 0, m * n * sizeof(double));
     }
     ~FluidSolver()
     {
@@ -275,13 +328,25 @@ class FluidSolver
 
     void update(double timestep)
     {
-        calculateRHS();
-        printf("Start Projection");
-        project(600, timestep);
-        printf("Start Apply Pressure");
-        applyPressure(timestep);
 
-        printf("Start Advection");
+        if (TEST_CIRCLE)
+        {
+            test_initialize_CircleVelocityField();
+        }
+
+        if (TEST_CIRCLE_DENSITY)
+        {
+            test_initialize_circleDensityField();
+        }
+
+        if (!TEST_CIRCLE)
+        {
+            // Projection
+            calculateRHS();
+            project(1000, timestep);
+            applyPressure(timestep);
+        }
+
         _d->advect(timestep, *_u, *_v);
         _u->advect(timestep, *_u, *_v);
         _v->advect(timestep, *_u, *_v);
@@ -291,63 +356,17 @@ class FluidSolver
         _v->flip();
     }
 
-    // TODO
-    void addInflow(double x, double y, double w, double h, double d, double u, double v)
+    void addInflow(double x, double y, double x1, double y1, double d, double u, double v)
     {
-        _d->addInflow(x, y, x + w, y + h, d);
-        _u->addInflow(x, y, x + w, y + h, u);
-        _v->addInflow(x, y, x + w, y + h, v);
+        _d->addInflow(x, y, x1, y1, d);
+        _u->addInflow(x, y, x1, y1, u);
+        _v->addInflow(x, y, x1, y1, v);
     }
 
-    // TODO
-    /* Convert fluid density to RGBA image */
-    void toImage(unsigned char *rgba)
+    /* Convert fluid density to RGB color scaled in 0 - 1 */
+    double toRGB(int x, int y)
     {
-        for (int i = 0; i < m * n; i++)
-        {
-            int shade = (int)((1.0 - _d->Phi()[i]) * 255.0);
-            shade = max(min(shade, 255), 0);
-
-            rgba[i * 4 + 0] = shade;
-            rgba[i * 4 + 1] = shade;
-            rgba[i * 4 + 2] = shade;
-            rgba[i * 4 + 3] = 0xFF;
-        }
+        int idx = y * m + x;
+        return max(min(1.0 - _d->Phi()[idx], 1.0), 0.0);
     }
 };
-
-main(int argc, char const *argv[])
-{
-    /* Play with these constants, if you want */
-    const int sizeX = 128;
-    const int sizeY = 128;
-
-    const double density = 0.1;
-    const double timestep = 0.005;
-
-    unsigned char *image = new unsigned char[sizeX * sizeY * 4];
-
-    FluidSolver *solver = new FluidSolver(sizeX, sizeY, density);
-
-    double time = 0.0;
-    int iterations = 0;
-
-    while (time < 8.0)
-    {
-        /* Use four substeps per iteration */
-        for (int i = 0; i < 4; i++)
-        {
-            solver->addInflow(0.45, 0.2, 0.1, 0.01, 1.0, 0.0, 3.0);
-            solver->update(timestep);
-            time += timestep;
-            fflush(stdout);
-        }
-
-        solver->toImage(image);
-
-        char path[256];
-        sprintf(path, "Frame%05d.png", iterations++);
-        lodepng_encode32_file(path, image, sizeX, sizeY);
-    }
-    return 0;
-}
