@@ -161,8 +161,8 @@ class FluidSolver
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                _rhs[idx] -= (_u->at(ix + 1, iy) - _u->at(ix, iy)) / dX;
-                _rhs[idx] -= (_v->at(ix, iy + 1) - _v->at(ix, iy)) / dX;
+                _rhs[idx] += (_u->at(ix + 1, iy) - _u->at(ix, iy)) / dX;
+                _rhs[idx] += (_v->at(ix, iy + 1) - _v->at(ix, iy)) / dX;
             }
         }
     }
@@ -204,7 +204,7 @@ class FluidSolver
                     _d->at(ix, iy) = 1;
                 }
 
-                if(r_square == 900)
+                if (r_square == 900)
                 {
                     double r = sqrt(r_square);
                     _u->at(ix, iy) = -(iy - n / 2.0) / r;
@@ -291,10 +291,10 @@ class FluidSolver
             {
                 int idx = iy * m + ix;
 
-                _u->at(ix, iy) -= _p[idx] * scale;
-                _u->at(ix + 1, iy) += _p[idx] * scale;
-                _v->at(ix, iy) -= _p[idx] * scale;
-                _v->at(ix, iy + 1) += _p[idx] * scale;
+                _u->at(ix, iy) += _p[idx] * scale;
+                _u->at(ix + 1, iy) -= _p[idx] * scale;
+                _v->at(ix, iy) += _p[idx] * scale;
+                _v->at(ix, iy + 1) -= _p[idx] * scale;
             }
         }
 
@@ -316,6 +316,7 @@ class FluidSolver
 
         memset(_p, 0, m * n * sizeof(double));
     }
+
     ~FluidSolver()
     {
         delete _d;
@@ -324,6 +325,24 @@ class FluidSolver
 
         delete[] _rhs;
         delete[] _p;
+    }
+
+    void test_projection_tent(double timestep)
+    {
+        // Projection
+        calculateRHS();
+        project(1000, timestep);
+        applyPressure(timestep);
+        
+        
+        for(int i = 0; i < m * n; i++)
+        {
+            printf("%.2f, ", _p[i]);
+            
+            if (i % m ==0) {
+                printf("\n");
+            }     
+        }
     }
 
     void update(double timestep)
