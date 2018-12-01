@@ -1,14 +1,8 @@
 add_executable(fluidsimulator
-    main.cpp
     #test.cpp
+    testRHS.cpp
     FluidQuantity.cpp
     FluidSolver.cpp
-    #lodepng.cpp
-    #UnitTest_Range_Iterator.cpp
-    #unitTest_Grid.cpp
-    #unitTest_computeVelocity.cpp
-    #unitTest_indexAndOffset.cpp
-    #unitTest_linearInterpolate.cpp
 )
 
 target_link_libraries(fluidsimulator

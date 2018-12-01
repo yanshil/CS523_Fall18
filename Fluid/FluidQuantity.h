@@ -15,91 +15,106 @@ namespace Nova
 template <typename T, int d>
 class FluidQuantity
 {
-    using T_INDEX = Vector<int, d>;
+  private:
     using TV = Vector<T, d>;
+    using T_INDEX = Vector<int, d>;
+
+    T *_Phi;
+    T *_Phi_new;
+
+    FluidSimulator_Grid<T, d> *grid; // with grid size
+
+    T hx;
+
+    int axis; // indicate face offset
+
+    T_INDEX simulation_counts;
+    Range<T, d> simulation_domain;
+    int size;
+
+    T linp(T a, T b, T delta) const
+    {
+        return a * (1 - delta) + b * delta;
+    }
 
   public:
-    T *Phi;     // Array of num_cell
-    T *Phi_new; // Array of num_cell
-    int axis;   // -1 for Scalar. 0, 1, 2 to indicate faces axis
-    int number_of_ghost_cells;
-
-    int size_whole_domain;
-    int size_interior_domain;
-    int size_simulation_domain;
-    FluidSimulator_Grid<T, d> *grid;
-
-    T_INDEX interior_domain;
-    T_INDEX whole_domain;
-    T_INDEX simulation_domain;
-
-    FluidQuantity();
-    FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis, int number_of_ghost_cells);
-    ~FluidQuantity();
-
-    /////////////////////////////////////////////////
-    /// Fundamental Read & Write
-    /////////////////////////////////////////////////
-    void fill(T content);
-    T at(const T_INDEX &index);
-    T &modify_at(const T_INDEX &index);
-    T &new_at(const T_INDEX &index);
-    T rgb_at(const T_INDEX &index);
-    void flip()
+    FluidQuantity()
     {
-        std::swap(Phi, Phi_new);
+        std::cout << "??" << std::endl;
     }
-    /////////////////////////////////////////////////
-    /// Fluid Simulate Steps
-    /////////////////////////////////////////////////
-    /* Compute Velocity */
-    TV computeVelocity(const TV &location, FluidQuantity *velocityField[d]);
-    /* Advection */
-    void advect(const T_INDEX &index, T timestep, FluidQuantity *velocityField[d]);
-    void advect(T timestep, FluidQuantity *velocityField[d]);
-    /////////////////////////////////////////////////
-    /// Auxiliary Function
-    /////////////////////////////////////////////////
-    TV Clamp_To_Domain(const TV &location);
-    T linter(T a, T b, T x);
-    T linter(const TV &location);
-    bool Inside_Domain(const T_INDEX &index);
-
-    /////////////////////////////////////////////////
-    /// Printing Function
-    /////////////////////////////////////////////////
-    void printPhi()
+    FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis)
+        : grid(&grid), axis(axis)
     {
-        std::cout << "Phi____: ";
-
-        for (int i = 0; i < whole_domain.Product(); i++)
+        // Simulation Domain
+        simulation_counts = T_INDEX(grid.counts);
+        simulation_domain = Range<T, d>(grid.domain);
+        if (axis != -1)
         {
-            if (i % whole_domain[0] == 0)
-            {
-                std::cout << "\n";
-            }
-            std::cout << Phi[i] << ", ";
+            simulation_counts(axis) += 1;
+            simulation_domain.max_corner(axis) += grid.dX(axis);
         }
 
-        std::cout << "\n================================" << std::endl;
+        size = simulation_counts.Product();
+        _Phi = new T[size];
+        _Phi_new = new T[size];
+
+        memset(_Phi, 0, size * sizeof(T));
+    }
+    ~FluidQuantity()
+    {
+        delete[] _Phi;
+        delete[] _Phi_new;
     }
 
-    void printPhi_new()
+    int index2offset(const T_INDEX &index) const
     {
-        std::cout << "Phi_new: ";
+        return grid->index2offset(index, simulation_counts);
+    }
+    T_INDEX offset2index(const int os) const
+    {
+        return grid->offset2index(os, simulation_counts);
+    }
 
-        for (int i = 0; i < whole_domain.Product(); i++)
+    void flip()
+    {
+        std::swap(_Phi, _Phi_new);
+    }
+
+    const T *Phi() const
+    {
+        return _Phi;
+    }
+
+    T at(const T_INDEX &index) const
+    {
+        return _Phi[index2offset(index)];
+    }
+    T &at(const T_INDEX &index)
+    {
+        return _Phi[index2offset(index)];
+    }
+
+    T linp(TV location) const;
+    void advect(T timestep, FluidQuantity *_v[d]);
+    void addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, const T input);
+
+    void printPhi()
+    {
+        std::cout << "axis = : " << axis;
+
+        for (int i = 0; i < size; i++)
         {
-            if (i % whole_domain[0] == 0)
+            if (i % simulation_counts[0] == 0)
             {
                 std::cout << "\n";
             }
-            std::cout << Phi_new[i] << ", ";
+            std::cout << _Phi[i] << ", ";
         }
 
         std::cout << "\n================================" << std::endl;
     }
 };
+
 } // namespace Nova
 
 #endif

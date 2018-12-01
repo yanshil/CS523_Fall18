@@ -1,10 +1,8 @@
-#include <nova/Tools/Parsing/Parse_Args.h>
-#include <nova/Tools/Utilities/File_Utilities.h>
 #include <GL/glut.h>
 #include <iostream>
 
 #include "FluidSolver.h"
-#define CELLCOUNTS 32
+#define CELLCOUNTS 128
 
 using namespace Nova;
 
@@ -19,14 +17,13 @@ using TV = Vector<T, d>;
 
 //----------------------------------------------------
 
-double timestep = 0.12;
+double timestep = 0.01;
 double density = 1;
 
 int iterations = 0;
-int number_of_ghost_cells = 1;
 
-FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box(), number_of_ghost_cells);
-FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, number_of_ghost_cells);
+FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
+FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 1);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
@@ -50,7 +47,7 @@ void drawGrid()
             float yPos = -1.0 + y * quadSize;
 
             T_INDEX index{x + 1, y + 1};
-            GLfloat color = (*solver).getRGBcolorDensity(index);
+            GLfloat color = solver->toRGB(index);
 
             glColor3f(color, color, color);
 
@@ -78,9 +75,7 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-
-    // addInflow(T_INDEX &index, double density, TV &velocity);
-    solver->addInflow(T_INDEX{8, 1}, density, TV{0, 1});
+    solver->addInflow(T_INDEX{8, 1}, T_INDEX{9,2}, 1.0, TV{1, 1});
     solver->update(timestep);
 }
 
@@ -95,15 +90,13 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0 / 60.0, timer, 0);
+    glutTimerFunc(1000.0 / 20, timer, 0);
 }
 
 // -------------------------------------------------
 
 int main(int argc, char **argv)
 {
-
-    solver->initialize();
 
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title
