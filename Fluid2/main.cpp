@@ -1,18 +1,39 @@
+#include <nova/Tools/Parsing/Parse_Args.h>
+#include <nova/Tools/Utilities/File_Utilities.h>
 #include <GL/glut.h>
 #include <iostream>
-#include "Fluid.h"
 
-double timestep = 0.01;
+#include "FluidSolver.h"
+#define CELLCOUNTS 32
+
+using namespace Nova;
+
+/*-------- Global typedef & varaible------------*/
+enum
+{
+    d = 2
+};
+using T = double;
+using T_INDEX = Vector<int, d>;
+using TV = Vector<T, d>;
+
+//----------------------------------------------------
+
+double timestep = 0.12;
 double density = 1;
-int iteration = 0;
-int count = 128;
 
-FluidSolver *solver = new FluidSolver(count, count, density);
+int iterations = 0;
+int number_of_ghost_cells = 1;
+
+FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box(), number_of_ghost_cells);
+FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 0, number_of_ghost_cells);
+
+int iteration = 1;
 //--------------------OpenGL--------------------
 
 void drawGrid()
 {
-    int quadCount = count;
+    int quadCount = CELLCOUNTS;
     float quadSize = 2.0f / static_cast<float>(quadCount);
 
     // Draw a Red 1x1 Square centered at origin
@@ -27,8 +48,9 @@ void drawGrid()
         for (int y = 0; y < quadCount; y++)
         {
             float yPos = -1.0 + y * quadSize;
-            GLfloat color = solver->toRGB(x, y);
-            // printf("Color(%d, %d) = %f\n", x, y, color);
+
+            T_INDEX index{x + 1, y + 1};
+            GLfloat color = (*solver).getRGBcolorDensity(index);
 
             glColor3f(color, color, color);
 
@@ -44,6 +66,8 @@ void drawGrid()
 
 void display()
 {
+    // std::cout << "Frame " << iteration << std::endl;
+    iteration++;
     //--------------------------------------------------------------
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Set background color to black and opaque
@@ -54,19 +78,11 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    // // x0, y0, x1, y1, d, u, v
-    // // /* Bottom Mid Single inflow */
-    // solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
+    solver->addInflow(T_INDEX{20, 20}, density);
+    solver->addInflow(T_INDEX{20, 19}, density);
+    solver->addInflow(T_INDEX{19, 19}, density);
+    solver->addInflow(T_INDEX{19, 20}, density);
     solver->update(timestep);
-    
-    // /* Top Right and circle test*/
-    // solver->addInflow(0.8, 0.8, 0.81, 0.81, 1, 0, 0);
-    solver->update(timestep);
-
-    // Nothing initialized
-
-    iteration++;
-    // std::cout << "iteration = " << iteration << std::endl;
 }
 
 // Keyboard callback function ( called on keyboard event handling )
@@ -80,15 +96,16 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0 / 60, timer, 0);
+    glutTimerFunc(1000.0 / 20, timer, 0);
 }
 
 // -------------------------------------------------
 
 int main(int argc, char **argv)
 {
-    // solver->test_initialize_CircleVelocityField();
-    solver->test_initialize_circleDensityField();
+
+    solver->initialize();
+    // solver->addInflow(T_INDEX{20, 20}, density);
 
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title

@@ -3,10 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TEST_CIRCLE false
-#define TEST_CIRCLE_DENSITY false
-#define TEST_SINGLEINFLOW true
-
 using namespace std;
 
 class FluidQuantity
@@ -167,53 +163,6 @@ class FluidSolver
         }
     }
 
-    // Circle Velocity Field?
-    void test_initialize_CircleVelocityField()
-    {
-        for (int iy = 0; iy < n; iy++)
-        {
-            for (int ix = 0; ix < m; ix++)
-            {
-                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
-
-                if (r_square < 0.01)
-                {
-                    (_u->at(ix, iy) = 0);
-                    (_v->at(ix, iy) = 0);
-                }
-                else
-                {
-                    double r = sqrt(r_square);
-                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
-                    _v->at(ix, iy) = (ix - m / 2.0) / r;
-                }
-            }
-        }
-    }
-
-    void test_initialize_circleDensityField()
-    {
-        for (int iy = 0; iy < n; iy++)
-        {
-            for (int ix = 0; ix < m; ix++)
-            {
-                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
-
-                if (r_square <= 900)
-                {
-                    _d->at(ix, iy) = 1;
-                }
-
-                if (r_square == 900)
-                {
-                    double r = sqrt(r_square);
-                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
-                    _v->at(ix, iy) = (ix - m / 2.0) / r;
-                }
-            }
-        }
-    }
-
     void project(int limit, double timestep)
     {
         double scale = timestep / rho / dX / dX;
@@ -260,11 +209,11 @@ class FluidSolver
             }
             if (maxDelta < 1e-5)
             {
-                printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
+                // printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
                 return;
             }
         }
-        printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
+        // printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
     }
 
     void setBoundaryCondition()
@@ -275,7 +224,7 @@ class FluidSolver
             _v->at(x, n) = 0.0;
         }
 
-        for (int y = 0; y < m; y++)
+        for (int y = 0; y < n; y++)
         {
             _u->at(m, y) = 0.0;
             _u->at(0, y) = 0.0;
@@ -326,6 +275,52 @@ class FluidSolver
         delete[] _rhs;
         delete[] _p;
     }
+    // Circle Velocity Field?
+    void test_initialize_CircleVelocityField()
+    {
+        for (int iy = 0; iy < n; iy++)
+        {
+            for (int ix = 0; ix < m; ix++)
+            {
+                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+                if (r_square < 0.01)
+                {
+                    (_u->at(ix, iy) = 0);
+                    (_v->at(ix, iy) = 0);
+                }
+                else
+                {
+                    double r = sqrt(r_square);
+                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
+                    _v->at(ix, iy) = (ix - m / 2.0) / r;
+                }
+            }
+        }
+    }
+
+    void test_initialize_circleDensityField()
+    {
+        for (int iy = 0; iy < n; iy++)
+        {
+            for (int ix = 0; ix < m; ix++)
+            {
+                double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+                if (r_square <= 900)
+                {
+                    _d->at(ix, iy) = 1;
+                }
+
+                if (r_square == 900)
+                {
+                    double r = sqrt(r_square);
+                    _u->at(ix, iy) = -(iy - n / 2.0) / r;
+                    _v->at(ix, iy) = (ix - m / 2.0) / r;
+                }
+            }
+        }
+    }
 
     void test_projection_tent(double timestep)
     {
@@ -333,43 +328,35 @@ class FluidSolver
         calculateRHS();
         project(1000, timestep);
         applyPressure(timestep);
-        
-        
-        for(int i = 0; i < m * n; i++)
+
+        for (int i = 0; i < m * n; i++)
         {
-            printf("%.2f, ", _p[i]);
-            
-            if (i % m ==0) {
+            printf("%.3f", _u->Phi()[i]);
+
+            if ((i + 1) % m == 0)
+            {
                 printf("\n");
-            }     
+            }
+            else
+            {
+                printf(",");
+            }
         }
     }
 
     void update(double timestep)
     {
+        // Projection
+        calculateRHS();
+        project(1000, timestep);
+        applyPressure(timestep);
 
-        if (TEST_CIRCLE)
-        {
-            test_initialize_CircleVelocityField();
-        }
-
-        if (TEST_CIRCLE_DENSITY)
-        {
-            test_initialize_circleDensityField();
-        }
-
-        if (!TEST_CIRCLE)
-        {
-            // Projection
-            calculateRHS();
-            project(1000, timestep);
-            applyPressure(timestep);
-        }
-
+        //Advection
         _d->advect(timestep, *_u, *_v);
         _u->advect(timestep, *_u, *_v);
         _v->advect(timestep, *_u, *_v);
 
+        // Flip
         _d->flip();
         _u->flip();
         _v->flip();

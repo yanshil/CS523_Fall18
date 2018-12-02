@@ -56,8 +56,8 @@ void display()
     //-------------------------------------
     // // x0, y0, x1, y1, d, u, v
     // // /* Bottom Mid Single inflow */
-    // solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
-    solver->update(timestep);
+    solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
+    // solver->update(timestep);
     
     // /* Top Right and circle test*/
     // solver->addInflow(0.8, 0.8, 0.81, 0.81, 1, 0, 0);
@@ -88,7 +88,7 @@ void timer(int)
 int main(int argc, char **argv)
 {
     // solver->test_initialize_CircleVelocityField();
-    solver->test_initialize_circleDensityField();
+    // solver->test_initialize_circleDensityField();
 
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title
