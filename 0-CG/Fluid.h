@@ -114,19 +114,30 @@ class FluidQuantity
             }
         }
     }
-    /* Sets fluid quantity inside the given rect to value `v' */
-    void addInflow(double x0, double y0, double x1, double y1, double v)
-    {
-        int ix0 = (int)(x0 / hx - ox);
-        int iy0 = (int)(y0 / hx - oy);
-        int ix1 = (int)(x1 / hx - ox);
-        int iy1 = (int)(y1 / hx - oy);
 
-        for (int y = max(iy0, 0); y < min(iy1, n); y++)
-            for (int x = max(ix0, 0); x < min(ix1, n); x++)
-                if (fabs(_Phi[x + y * m]) < fabs(v))
-                    _Phi[x + y * m] = v;
+    void addInflow(int ix, int iy, double value)
+    {
+        // if(ix >= 0 & ix < m & iy >=0 & iy < n)
+        if (fabs(_Phi[iy * m + ix]) < fabs(value))
+        {
+            _Phi[iy * m + ix] = value;
+            printf("Add Inflow at (%d, %d)\n", ix, iy);
+        }
     }
+
+    // /* Sets fluid quantity inside the given rect to value `v' */
+    // void addInflow(double x0, double y0, double x1, double y1, double v)
+    // {
+    //     int ix0 = (int)(x0 / hx - ox);
+    //     int iy0 = (int)(y0 / hx - oy);
+    //     int ix1 = (int)(x1 / hx - ox);
+    //     int iy1 = (int)(y1 / hx - oy);
+
+    //     for (int y = max(iy0, 0); y < min(iy1, n); y++)
+    //         for (int x = max(ix0, 0); x < min(ix1, n); x++)
+    //             if (fabs(_Phi[x + y * m]) < fabs(v))
+    //                 _Phi[x + y * m] = v;
+    // }
 };
 
 class FluidSolver
@@ -524,13 +535,28 @@ class FluidSolver
         _v->flip();
     }
 
-    void addInflow(double x, double y, double w, double h, double d, double u, double v)
+    void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, double value)
     {
-        _d->addInflow(x, y, x + w, y + h, d);
-        _u->addInflow(x, y, x + w, y + h, u);
-        _v->addInflow(x, y, x + w, y + h, v);
+        for (int y = max(iy0, 0); y < min(iy1, n); y++)
+            for (int x = max(ix0, 0); x < min(ix1, m); x++)
+            {
+                int idx = y * m + x;
+                if (axis == -1)
+                    _d->addInflow(x, y, value);
+                if (axis == 0)
+                    _u->addInflow(x, y, value);
+                if (axis == 1)
+                    _v->addInflow(x, y, value);
+            }
     }
-    
+
+    // void addInflow(double x, double y, double w, double h, double d, double u, double v)
+    // {
+    //     _d->addInflow(x, y, x + w, y + h, d);
+    //     _u->addInflow(x, y, x + w, y + h, u);
+    //     _v->addInflow(x, y, x + w, y + h, v);
+    // }
+
     /* Convert fluid density to RGB color scaled in 0 - 1 */
     double toRGB(int x, int y)
     {

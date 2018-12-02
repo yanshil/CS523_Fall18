@@ -56,8 +56,14 @@ void display()
     //-------------------------------------
     // // x0, y0, x1, y1, d, u, v
     // // /* Bottom Mid Single inflow */
-    // solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
-    solver->addInflow(0.45, 0.01, 0.05, 0.05, 1.0, 0.0, 1.0);
+
+    // solver->addInflow(62, 1, 66, 4, -1, 1);
+    // solver->addInflow(62, 1, 66, 4, 1, 1);
+
+    
+    solver->addInflow(57, 1, 64, 7, -1, 1);
+    solver->addInflow(57, 1, 64, 7, 1, 1);
+    
     // solver->update(timestep);
     
     // /* Top Right and circle test*/
