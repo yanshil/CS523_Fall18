@@ -8,17 +8,19 @@ using namespace std;
 
 class FluidQuantity
 {
+  private:
     double *_Phi;
     double *_Phi_new;
 
     // m * n grid
     int m;
     int n;
+    // Grid Cell size
+    double hx;
+
     // Face indicator
     int axis;
     double ox, oy;
-    // Grid Cell size
-    double hx;
 
     // 1D Linear Interpolate between a and b in (0,1)
     double linp(double a, double b, double delta) const
@@ -27,8 +29,8 @@ class FluidQuantity
     }
 
   public:
-    FluidQuantity(int w, int h, int axis, double hx)
-        : m(w), n(h), axis(axis), hx(hx)
+    FluidQuantity(int m, int n, int axis, double hx)
+        : m(n), n(n), axis(axis), hx(hx)
     {
         ox = (axis == 0) ? 0 : 0.5;
         oy = (axis == 1) ? 0 : 0.5;
@@ -38,7 +40,6 @@ class FluidQuantity
 
         memset(_Phi, 0, m * n * sizeof(double));
     }
-
     ~FluidQuantity()
     {
         delete[] _Phi;
@@ -65,7 +66,7 @@ class FluidQuantity
         return _Phi[x + y * m];
     }
 
-    // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
+    // Linear Interpolate on grid at (x, y)
     double linp(double x, double y) const
     {
         // Clamp Coordinates
@@ -89,7 +90,7 @@ class FluidQuantity
         return re;
     }
 
-    void advect(double timestep, const FluidQuantity &u, const FluidQuantity &v)
+    double advect(double timestep, const FluidQuantity &u, const FluidQuantity &v)
     {
         // Reduce Spatial locality
 
@@ -103,6 +104,7 @@ class FluidQuantity
                 double y = iy + oy;
 
                 // Compute velocity
+                // TODO / hx ????
                 double velocity_u = u.linp(x, y) / hx;
                 double velocity_v = v.linp(x, y) / hx;
 
@@ -114,12 +116,14 @@ class FluidQuantity
             }
         }
     }
-    /* Sets fluid quantity inside the given rect to value `v' */
+
+    // TODO
     void addInflow(double x0, double y0, double x1, double y1, double v)
     {
         int ix0 = (int)(x0 / hx - ox);
-        int iy0 = (int)(y0 / hx - oy);
         int ix1 = (int)(x1 / hx - ox);
+
+        int iy0 = (int)(y0 / hx - oy);
         int iy1 = (int)(y1 / hx - oy);
 
         for (int y = max(iy0, 0); y < min(iy1, n); y++)
@@ -131,24 +135,27 @@ class FluidQuantity
 
 class FluidSolver
 {
+  private:
     FluidQuantity *_d;
     FluidQuantity *_u;
     FluidQuantity *_v;
 
     int m;
     int n;
-
     double hx;
-    double rho;
+    double rho; // rho
 
     double *_rhs;
     double *_p;
-    double *_z;      /* Auxiliary vector */
-    double *_s;      /* Search vector */
-    double *_precon; /* Preconditioner */
 
-    double *_Adiag;  /* Matrix diagonal */
-    double *_Aplusi; /* Matrix off-diagonals */
+    // Conjugate Gradient
+    double *_z;      // Auxiliary Vector
+    double *_s;      // Searching Vector
+    double *_precon; // Preconditioner M
+
+    // Matrix-Vector Form storage
+    double *_Adiag;
+    double *_Aplusi;
     double *_Aplusj;
 
     void calculateRHS()
@@ -163,11 +170,19 @@ class FluidSolver
                 _rhs[idx] -= (_v->at(ix, iy + 1) - _v->at(ix, iy)) / hx;
             }
         }
+
+        // double scale = 1.0 / hx;
+
+        // for (int y = 0, idx = 0; y < m; y++)
+        // {
+        //     for (int x = 0; x < n; x++, idx++)
+        //     {
+        //         _rhs[idx] = -scale * (_u->at(x + 1, y) - _u->at(x, y) +
+        //                               _v->at(x, y + 1) - _v->at(x, y));
+        //     }
+        // }
     }
 
-    /* Builds the pressure matrix. Since the matrix is very sparse and
-     * symmetric, it allows for memory friendly storage.
-     */
     void calculateA(double timestep)
     {
         double scale = timestep / rho / hx / hx;
@@ -201,40 +216,35 @@ class FluidSolver
                 }
             }
         }
+
+        // double scale = timestep / (rho * hx * hx);
+
+        // memset(_Adiag, 0, m * n * sizeof(double));
+
+        // for (int y = 0, idx = 0; y < n; y++)
+        // {
+        //     for (int x = 0; x < m; x++, idx++)
+        //     {
+        //         if (x < m - 1)
+        //         {
+        //             _Adiag[idx] += scale;
+        //             _Adiag[idx + 1] += scale;
+        //             _Aplusi[idx] = -scale;
+        //         }
+        //         else
+        //             _Aplusi[idx] = 0.0;
+
+        //         if (y < n - 1)
+        //         {
+        //             _Adiag[idx] += scale;
+        //             _Adiag[idx + m] += scale;
+        //             _Aplusj[idx] = -scale;
+        //         }
+        //         else
+        //             _Aplusj[idx] = 0.0;
+        //     }
+        // }
     }
-
-    // /* Builds the modified incomplete Cholesky preconditioner */
-    // void calculatePreconditioner()
-    // {
-    //     const double tau = 0.97;
-    //     const double sigma = 0.25;
-
-    //     for (int y = 0, idx = 0; y < n; y++)
-    //     {
-    //         for (int x = 0; x < m; x++, idx++)
-    //         {
-    //             double e = _Adiag[idx];
-
-    //             if (x > 0)
-    //             {
-    //                 double px = _Aplusi[idx - 1] * _precon[idx - 1];
-    //                 double py = _Aplusj[idx - 1] * _precon[idx - 1];
-    //                 e = e - (px * px + tau * px * py);
-    //             }
-    //             if (y > 0)
-    //             {
-    //                 double px = _Aplusi[idx - m] * _precon[idx - m];
-    //                 double py = _Aplusj[idx - m] * _precon[idx - m];
-    //                 e = e - (py * py + tau * px * py);
-    //             }
-
-    //             if (e < sigma * _Adiag[idx])
-    //                 e = _Adiag[idx];
-
-    //             _precon[idx] = 1.0 / sqrt(e);
-    //         }
-    //     }
-    // }
 
     void applyPreconditioner(double *dst, double *src)
     {
@@ -247,12 +257,30 @@ class FluidSolver
     }
 
     // x * y
-    double InnerProduct(double *a, double *b)
+    double InnerProduct(double *_x, double *_y)
     {
-        double result = 0.0;
+        double sum = 0;
         for (int i = 0; i < m * n; i++)
-            result += a[i] * b[i];
-        return result;
+            sum += _x[i] * _y[i];
+        return sum;
+
+        // double result = 0.0;
+        // for (int i = 0; i < m * n; i++)
+        //     result += _x[i] * _y[i];
+        // return result;
+    }
+
+    // dst <- alpha * b1 + b2
+    // void saxpy(double *_dst, double alpha, double *_b1, double *_b2)
+    // {
+    //     for (int i = 0; i < m * n; i++)
+    //         _dst[i] = alpha * _b1[i] + _b2[i];
+    // }
+
+    void saxpy(double *dst, double *a, double *b, double s)
+    {
+        for (int i = 0; i < m * n; i++)
+            dst[i] = a[i] + b[i] * s;
     }
 
     // y <- A * x
@@ -291,13 +319,25 @@ class FluidSolver
                 _dst[idx] = sum;
             }
         }
-    }
 
-    // dst = x + y * k
-    void saxpy(double *_dst, double *_x, double *_y, double k)
-    {
-        for (int i = 0; i < m * n; i++)
-            _dst[i] = _x[i] + _y[i] * k;
+        // for (int y = 0, idx = 0; y < n; y++)
+        // {
+        //     for (int x = 0; x < m; x++, idx++)
+        //     {
+        //         double t = _Adiag[idx] * _src[idx];
+
+        //         if (x > 0)
+        //             t += _Aplusi[idx - 1] * _src[idx - 1];
+        //         if (y > 0)
+        //             t += _Aplusj[idx - m] * _src[idx - m];
+        //         if (x < m - 1)
+        //             t += _Aplusi[idx] * _src[idx + 1];
+        //         if (y < n - 1)
+        //             t += _Aplusj[idx] * _src[idx + m];
+
+        //         _dst[idx] = t;
+        //     }
+        // }
     }
 
     // |x|_infinity
@@ -311,9 +351,133 @@ class FluidSolver
             // maxNorm = max(fabs(_x[i]), maxNorm);
         }
         return maxNorm;
+
+        // double maxA = __DBL_MIN__;
+        // for (int i = 0; i < m * n; i++)
+        //     maxA = max(maxA, fabs(_x[i]));
+        // return maxA;
     }
 
-    void project_GS(int limit, double timestep, bool output = true)
+    void printArray(double *src)
+    {
+        for (int i = 0; i < m * n; i++)
+        {
+            printf("%.3f", src[i]);
+
+            if ((i + 1) % m == 0)
+            {
+                printf("\n");
+            }
+            else
+            {
+                printf(",");
+            }
+        }
+    }
+
+    void project_CG(int limit)
+    {
+        // Set initial guess p = 0 and r = d(the RHS)
+        memset(_p, 0, m * n * sizeof(double));
+        // Set auxiliary vector z = applyPreconditioner(r)
+        applyPreconditioner(_z, _rhs);
+
+        // printArray(_rhs);
+
+        // printArray(_z);
+
+        // and search vector s = z;     dst, src, size
+        memcpy(_s, _z, m * n * sizeof(double));
+
+        double sigma = InnerProduct(_z, _rhs);
+        // printf("sigma = %f\n", sigma);
+
+        double norm1 = ConvergenceNorm(_rhs);
+        if (norm1 < 1e-5)
+            return;
+
+        // Enter Iteration with limit
+        for (int iteration = 0; iteration < limit; iteration++)
+        {
+            // Set Auxiliary vector z : Multiply(z, s)
+            Multiply(_z, _s);
+
+            double alpha = sigma / InnerProduct(_z, _s);
+            // printf("alpha = %f\n", sigma);
+
+            // Update p and r
+            // saxpy(_p, alpha, _s, _p);      // p += alpha * s
+            // saxpy(_rhs, -alpha, _z, _rhs); // r -= alpha * z
+            saxpy(_p, _p, _s, alpha);
+            saxpy(_rhs, _rhs, _z, -alpha);
+
+            // If with convergence-norm < tol, return
+            norm1 = ConvergenceNorm(_rhs);
+            if (norm1 < 1e-5)
+            {
+                printf("Converge when iteration = %d, with 1Norm = %f\n", iteration, norm1);
+                return;
+            }
+
+            // Set auxiliary vector z = applyPreconditioner(r)
+            applyPreconditioner(_z, _rhs);
+            // Sigma_new = dotproduct(z, r)
+            double sigma_new = InnerProduct(_z, _rhs);
+            // printf("sigma_new = %f\n", sigma_new);
+            double beta = sigma_new / sigma;
+            // Set search vector s = z + beta * s
+            // saxpy(_s, beta, _s, _z);
+
+            saxpy(_s, _z, _s, beta);
+            sigma = sigma_new;
+        }
+
+        printf("The %d iteration Limit Exceeded with 1Norm = %f\n", limit, norm1);
+    }
+
+    /* Conjugate gradients solver */
+    void project_3(int limit)
+    {
+        memset(_p, 0, m * n * sizeof(double)); /* Initial guess of zeroes */
+        applyPreconditioner(_z, _rhs);
+
+        // printArray(_rhs);
+
+        memcpy(_s, _z, m * n * sizeof(double));
+
+        double maxError = ConvergenceNorm(_rhs);
+        if (maxError < 1e-5)
+            return;
+
+        double sigma = InnerProduct(_z, _rhs);
+
+        for (int iter = 0; iter < limit; iter++)
+        {
+            Multiply(_z, _s);
+            double alpha = sigma / InnerProduct(_z, _s);
+
+            saxpy(_p, _p, _s, alpha);
+            saxpy(_rhs, _rhs, _z, -alpha);
+
+            maxError = ConvergenceNorm(_rhs);
+            if (maxError < 1e-5)
+            {
+                printf("Exiting solver after %d iterations, maximum error is %f\n", iter, maxError);
+                return;
+            }
+
+            applyPreconditioner(_z, _rhs);
+
+            double sigmaNew = InnerProduct(_z, _rhs);
+
+            saxpy(_s, _z, _s, sigmaNew / sigma);
+            sigma = sigmaNew;
+        }
+
+        printf("Exceeded budget of %d iterations, maximum error was %f\n", limit, maxError);
+    }
+
+    void project_GS(int limit, double timestep)
     {
         double scale = timestep / rho / hx / hx;
 
@@ -359,76 +523,11 @@ class FluidSolver
             }
             if (maxDelta < 1e-5)
             {
-                if (output)
-                    printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
-
+                printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
                 return;
             }
         }
-
-        if (output)
-            printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
-    }
-
-    void project_CG(int limit, bool output = true)
-    {
-        // Set initial guess p = 0 and r = d(the RHS)
-        memset(_p, 0, m * n * sizeof(double));
-        // Set auxiliary vector z = applyPreconditioner(r)
-        applyPreconditioner(_z, _rhs);
-
-        // printArray(_rhs);
-
-        // printArray(_z);
-
-        // and search vector s = z;     dst, src, size
-        memcpy(_s, _z, m * n * sizeof(double));
-
-        double sigma = InnerProduct(_z, _rhs);
-        // printf("sigma = %f\n", sigma);
-
-        double norm1 = ConvergenceNorm(_rhs);
-        if (norm1 < 1e-5)
-            return;
-
-        // Enter Iteration with limit
-        for (int iteration = 0; iteration < limit; iteration++)
-        {
-            // Set Auxiliary vector z : Multiply(z, s)
-            Multiply(_z, _s);
-
-            double alpha = sigma / InnerProduct(_z, _s);
-            // printf("alpha = %f\n", sigma);
-
-            // Update p and r
-            // saxpy(_p, alpha, _s, _p);      // p += alpha * s
-            // saxpy(_rhs, -alpha, _z, _rhs); // r -= alpha * z
-            saxpy(_p, _p, _s, alpha);
-            saxpy(_rhs, _rhs, _z, -alpha);
-
-            // If with convergence-norm < tol, return
-            norm1 = ConvergenceNorm(_rhs);
-            if (norm1 < 1e-5)
-            {
-                if (output)
-                    printf("Converge when iteration = %d, with 1Norm = %f\n", iteration, norm1);
-                return;
-            }
-
-            // Set auxiliary vector z = applyPreconditioner(r)
-            applyPreconditioner(_z, _rhs);
-            // Sigma_new = dotproduct(z, r)
-            double sigma_new = InnerProduct(_z, _rhs);
-            // printf("sigma_new = %f\n", sigma_new);
-            double beta = sigma_new / sigma;
-            // Set search vector s = z + beta * s
-            // saxpy(_s, beta, _s, _z);
-
-            saxpy(_s, _z, _s, beta);
-            sigma = sigma_new;
-        }
-        if (output)
-            printf("The %d iteration Limit Exceeded with 1Norm = %f\n", limit, norm1);
+        printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
     }
 
     void setBoundaryCondition()
@@ -466,13 +565,11 @@ class FluidSolver
     }
 
   public:
-    FluidSolver(int w, int h, double density) : m(w), n(h), rho(density)
+    FluidSolver(int w, int h, double rho)
+        : m(w), n(h), rho(rho)
     {
-        hx = 1.0 / min(w, h);
 
-        // _d = new FluidQuantity(m, n, 0.5, 0.5, hx);
-        // _u = new FluidQuantity(m + 1, n, 0.0, 0.5, hx);
-        // _v = new FluidQuantity(m, n + 1, 0.5, 0.0, hx);
+        hx = 1.0 / min(w, h);
 
         _d = new FluidQuantity(m, n, -1, hx);
         _u = new FluidQuantity(m + 1, n, 0, hx);
@@ -480,12 +577,14 @@ class FluidSolver
 
         _rhs = new double[m * n];
         _p = new double[m * n];
+
         _z = new double[m * n];
         _s = new double[m * n];
+        _precon = new double[m * n];
+
         _Adiag = new double[m * n];
         _Aplusi = new double[m * n];
         _Aplusj = new double[m * n];
-        _precon = new double[m * n];
     }
 
     ~FluidSolver()
@@ -498,14 +597,74 @@ class FluidSolver
         delete[] _p;
         delete[] _z;
         delete[] _s;
+        delete[] _precon;
         delete[] _Adiag;
         delete[] _Aplusi;
         delete[] _Aplusj;
-        delete[] _precon;
+    }
+    // // Circle Velocity Field?
+    // void test_initialize_CircleVelocityField()
+    // {
+    //     for (int iy = 0; iy < n; iy++)
+    //     {
+    //         for (int ix = 0; ix < m; ix++)
+    //         {
+    //             double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+    //             if (r_square < 0.01)
+    //             {
+    //                 (_u->at(ix, iy) = 0);
+    //                 (_v->at(ix, iy) = 0);
+    //             }
+    //             else
+    //             {
+    //                 double r = sqrt(r_square);
+    //                 _u->at(ix, iy) = -(iy - n / 2.0) / r;
+    //                 _v->at(ix, iy) = (ix - m / 2.0) / r;
+    //             }
+    //         }
+    //     }
+    // }
+
+    // void test_initialize_circleDensityField()
+    // {
+    //     for (int iy = 0; iy < n; iy++)
+    //     {
+    //         for (int ix = 0; ix < m; ix++)
+    //         {
+    //             double r_square = (ix - m / 2.0) * (ix - m / 2.0) + (iy - n / 2.0) * (iy - n / 2.0);
+
+    //             if (r_square <= 900)
+    //             {
+    //                 _d->at(ix, iy) = 1;
+    //             }
+
+    //             if (r_square == 900)
+    //             {
+    //                 double r = sqrt(r_square);
+    //                 _u->at(ix, iy) = -(iy - n / 2.0) / r;
+    //                 _v->at(ix, iy) = (ix - m / 2.0) / r;
+    //             }
+    //         }
+    //     }
+    // }
+
+    void test_projection_tent(double timestep)
+    {
+        // Projection
+        calculateRHS();
+        calculateA(timestep);
+        // project_GS(1000, timestep);
+        project_CG(1000);
+        // project_3(600);
+        applyPressure(timestep);
+
+        printArray(_p);
     }
 
     void update(double timestep)
     {
+        printf("Stuck where?\n");
         // Projection
         calculateRHS();
         calculateA(timestep);
@@ -524,50 +683,24 @@ class FluidSolver
         _v->flip();
     }
 
+    // void addInflow(double x, double y, double x1, double y1, double d, double u, double v)
+    // {
+    //     _d->addInflow(x, y, x1, y1, d);
+    //     _u->addInflow(x, y, x1, y1, u);
+    //     _v->addInflow(x, y, x1, y1, v);
+    // }
+
     void addInflow(double x, double y, double w, double h, double d, double u, double v)
     {
         _d->addInflow(x, y, x + w, y + h, d);
         _u->addInflow(x, y, x + w, y + h, u);
         _v->addInflow(x, y, x + w, y + h, v);
     }
-    
+
     /* Convert fluid density to RGB color scaled in 0 - 1 */
     double toRGB(int x, int y)
     {
         int idx = y * m + x;
         return max(min(1.0 - _d->Phi()[idx], 1.0), 0.0);
-    }
-
-    void printArray(double *src)
-    {
-        for (int i = 0; i < m * n; i++)
-        {
-            printf("%.3f", src[i]);
-
-            if ((i + 1) % m == 0)
-            {
-                printf("\n");
-            }
-            else
-            {
-                printf(",");
-            }
-        }
-    }
-
-    //===========================================================
-
-    // Projection output as a tent-like plot
-    void test_projection_tent(double timestep)
-    {
-        // Projection
-        calculateRHS();
-        calculateA(timestep);
-        // calculatePreconditioner();
-        // project_GS(1000, timestep, false);
-        project_CG(1000, false);
-        applyPressure(timestep);
-
-        printArray(_p);
     }
 };

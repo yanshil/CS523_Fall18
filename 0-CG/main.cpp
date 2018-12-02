@@ -1,18 +1,18 @@
 #include <GL/glut.h>
 #include <iostream>
 #include "Fluid.h"
+#define CELLCOUNTS 128
 
 double timestep = 0.01;
 double density = 1;
 int iteration = 0;
-int count = 128;
 
-FluidSolver *solver = new FluidSolver(count, count, density);
+FluidSolver *solver = new FluidSolver(CELLCOUNTS, CELLCOUNTS, density);
 //--------------------OpenGL--------------------
 
 void drawGrid()
 {
-    int quadCount = count;
+    int quadCount = CELLCOUNTS;
     float quadSize = 2.0f / static_cast<float>(quadCount);
 
     // Draw a Red 1x1 Square centered at origin
@@ -56,7 +56,8 @@ void display()
     //-------------------------------------
     // // x0, y0, x1, y1, d, u, v
     // // /* Bottom Mid Single inflow */
-    solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
+    // solver->addInflow(0.45, 0, 0.5, 0.05, 1, 0, 1);
+    solver->addInflow(0.45, 0.01, 0.05, 0.05, 1.0, 0.0, 1.0);
     // solver->update(timestep);
     
     // /* Top Right and circle test*/

@@ -5,7 +5,7 @@ FluidSolver *solver = new FluidSolver(128, 128, 1);
 
 void unitTest_Projection_Tent(double timestep)
 {
-    solver->addInflow(0.3, 0.3, 0.51, 0.51, 0, 3, 0);
+    solver->addInflow(0.3, 0.3, 0.01, 0.01, 0, 3, 0);
     solver->test_projection_tent(timestep);
 }
 

@@ -1,7 +1,10 @@
 cmake_minimum_required (VERSION 2.8.11)
 
 project(0-CG)
+
 add_executable(0-CG ${SRC} "main.cpp")
+
+add_executable(unitTest ${SRC} "unitTest.cpp")
 
 
 ## Build-in Libraries
