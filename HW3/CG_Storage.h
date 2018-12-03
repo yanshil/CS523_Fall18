@@ -5,8 +5,7 @@
 //######################################################################
 #ifndef __CG_Storage__
 #define __CG_Storage__
-
-#include <nova/Tools/Utilities/Example.h>
+#include <nova/Tools/Grids/Grid.h>
 
 namespace Nova
 {
@@ -22,8 +21,9 @@ class CG_Storage
     int newton_iterations, cg_iterations, cg_restart_iterations;
     T cg_tolerance;
 
-    CG_Storage()
+    CG_Storage(Grid<T,d> &grid)
     {
+        counts = grid.counts;
         size = counts.Product();
     }
 

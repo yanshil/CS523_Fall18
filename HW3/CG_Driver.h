@@ -7,17 +7,15 @@
 #define __CG_Driver__
 
 #include <nova/Tools/Krylov_Solvers/Conjugate_Gradient.h>
-#include <nova/Tools/Utilities/Driver.h>
 #include "CG_Storage.h"
 #include "CG_System.h"
 
 namespace Nova
 {
 template <class T, int d>
-class CG_Driver : public Driver<T, d>
+class CG_Driver
 {
     using TV = Vector<T, d>;
-    using Base = Driver<T, d>;
     int size;
 
   public:
@@ -42,7 +40,6 @@ class CG_Driver : public Driver<T, d>
         Conjugate_Gradient<T> cg;
 
         T b_norm = cg_system.Convergence_Norm(cg_b);
-        Log::cout << "Norm: " << b_norm << std::endl;
 
         cg.print_residuals = true;
         cg.print_diagnostics = true;
