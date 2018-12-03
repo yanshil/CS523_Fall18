@@ -24,7 +24,7 @@ class CG_Driver
     CG_Driver(CG_Storage<T, d> &storage_input)
         :storage(storage_input)
     {
-        int size = storage.size;
+        this->size = storage.size;
 
     }
     ~CG_Driver() {}

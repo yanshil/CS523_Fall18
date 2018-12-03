@@ -9,6 +9,7 @@
 #include <nova/Tools/Krylov_Solvers/Krylov_System_Base.h>
 #include "CG_Vector.h"
 #include "CG_Storage.h"
+#include <nova/Tools/Log/Log.h>
 
 namespace Nova
 {
@@ -29,17 +30,40 @@ class CG_System : public Krylov_System_Base<T>
 
     void Multiply(const Vector_Base &v, Vector_Base &result) const
     {
-        // Array<TV>& v_array                  = CG_Vector<T,d>::CG_Array(const_cast<Vector_Base&>(v));
-        // Array<TV>& result_array             = CG_Vector<T,d>::CG_Array(result);
+        Array<TV> &v_array = CG_Vector<T, d>::CG_Array(const_cast<Vector_Base &>(v));
+        Array<TV> &result_array = CG_Vector<T, d>::CG_Array(result);
 
         // Array<TV> G(v_array.size()),K(v_array.size());
-        // result_array.Fill(TV());
+        result_array.Fill(TV());
 
-        // storage.Add_Damping_Forces(v_array,G);
-        // storage.Add_Force_Differentials(v_array,K);
+        for (int iy = 0; iy < storage.n; iy++)
+        {
+            for (int ix = 0; ix < storage.m; ix++)
+            {
+                int idx = iy * storage.m + ix;
+                result_array(idx) = storage._Adiag(idx) * v_array(idx);
 
-        // for(size_t i=0;i<storage.simulation_mesh->points.size();++i)
-        //     result_array(i)=(storage.mass(i)*v_array(i))*one_over_dt_squared-one_over_dt*G(i)-K(i);
+                if (ix > 0)
+                { // if u.previous valid
+                    result_array(idx) += storage._Aplusi(idx - 1) * v_array(idx - 1);
+                }
+
+                if (iy > 0)
+                {
+                    result_array(idx) += storage._Aplusj(idx - storage.m) * v_array(idx - storage.m);
+                }
+
+                if (ix < storage.m - 1)
+                {
+                    result_array(idx) += storage._Aplusi(idx) * v_array(idx + 1);
+                }
+
+                if (iy < storage.n - 1)
+                {
+                    result_array(idx) += storage._Aplusj(idx) * v_array(idx + storage.m);
+                }
+            }
+        }
     }
 
     double Inner_Product(const Vector_Base &x, const Vector_Base &y) const

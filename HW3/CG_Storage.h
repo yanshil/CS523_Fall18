@@ -58,9 +58,8 @@ class CG_Storage
         _Adiag.resize(size);
         _Aplusi.resize(size);
         _Aplusj.resize(size);
-
         _rhs.resize(size);
-
+        
     }
 
     void calculateA()
@@ -104,6 +103,7 @@ class CG_Storage
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
+                _rhs(idx) = 4;
                 // _rhs(idx) -= (_u->at(ix + 1, iy) - _u->at(ix, iy)) / hx;
                 // _rhs(idx) -= (_v->at(ix, iy + 1) - _v->at(ix, iy)) / hx;
             }
