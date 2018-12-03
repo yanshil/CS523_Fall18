@@ -92,3 +92,12 @@ void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size)
     }
     std::cout << std::endl;
 }
+
+void test2()
+{
+    // Random x and y
+
+    //x^T A y = y^T A x
+    // if A is symmetric, compute x^T A y an y^T A x and check if equal
+
+}

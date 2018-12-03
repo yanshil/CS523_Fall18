@@ -100,7 +100,7 @@ class CG_System : public Krylov_System_Base<T>
             result = std::max(result, x_array(i).Abs().Max());
         return result;
     }
-
+    // modifies system Ax=b to PAPx=Pb
     void Project(Vector_Base &x) const {}
 
     void Set_Boundary_Conditions(Vector_Base &v) const {}

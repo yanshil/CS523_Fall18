@@ -107,9 +107,9 @@ class CG_Storage
                 }
             }
         }
-        // _Adiag *= one_over_dX_square;
-        // _Aplusi *= one_over_dX_square;
-        // _Aplusj *= one_over_dX_square;
+        _Adiag *= one_over_dX_square;
+        _Aplusi *= one_over_dX_square;
+        _Aplusj *= one_over_dX_square;
     }
 
     void calculateRHS()
