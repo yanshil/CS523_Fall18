@@ -31,7 +31,8 @@ class CG_Driver
 
     void Execute()
     {
-        Array<TV> rhs(size);
+        Array<TV> rhs = storage._rhs;
+        
         Array<TV> delta_X(size);
         Array<TV> temp_q(size), temp_s(size), temp_r(size), temp_k(size), temp_z(size);
         CG_Vector<T, d> cg_x(delta_X), cg_b(rhs), cg_q(temp_q), cg_s(temp_s), cg_r(temp_r), cg_k(temp_k), cg_z(temp_z);

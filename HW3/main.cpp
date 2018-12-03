@@ -18,6 +18,9 @@ int main(int argc, char const *argv[])
     Range<T,d> range(TV(-0.5), TV(0.5));
     Grid<T,d> * grid = new Grid<T,d>(T_INDEX(counts), range);
     CG_Storage<T,d> storage(*grid);
+
+    storage.calculateA();
+    storage.calculateRHS();
     
     CG_Driver<T,d> driver(storage);
 
