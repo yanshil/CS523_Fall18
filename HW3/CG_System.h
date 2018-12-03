@@ -73,7 +73,12 @@ class CG_System : public Krylov_System_Base<T>
 
         double result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)
+        {
+            // TV x0 = x_array(i);
+            // TV y0 = x_array(i);
+            // result += x0.Max() * y0.Max();
             result += x_array(i).Dot_Product(y_array(i));
+        }
         return result;
     }
 
@@ -84,6 +89,7 @@ class CG_System : public Krylov_System_Base<T>
         T result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)
             result = std::max(result, x_array(i).Norm());
+            // result = std::max(result, x_array(i).Abs().Max());
         return result;
     }
 

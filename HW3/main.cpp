@@ -27,6 +27,11 @@ int main(int argc, char const *argv[])
     CG_Driver<T,d> driver(storage);
 
     driver.Execute();
+    
+    // for(int i = 0; i < storage.size; i++)
+    // {
+    //     std::cout << storage._Adiag(i) << ", "<< std::endl;
+    // }
 
     return 0;
 }

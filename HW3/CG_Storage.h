@@ -104,8 +104,6 @@ class CG_Storage
             {
                 int idx = iy * m + ix;
                 _rhs(idx) = 4;
-                // _rhs(idx) -= (_u->at(ix + 1, iy) - _u->at(ix, iy)) / hx;
-                // _rhs(idx) -= (_v->at(ix, iy + 1) - _v->at(ix, iy)) / hx;
             }
         }
     }
