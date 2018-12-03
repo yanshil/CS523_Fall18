@@ -47,9 +47,24 @@ class CG_Storage
     {
     }
 
+    void setting(int cg_iterations_input = 600, int cg_restart_iterations_input = 100)
+    {
+        cg_iterations = cg_iterations_input;
+        cg_restart_iterations = cg_restart_iterations_input;
+    }
+
+    void initialize()
+    {
+        _Adiag.resize(size);
+        _Aplusi.resize(size);
+        _Aplusj.resize(size);
+
+        _rhs.resize(size);
+
+    }
+
     void calculateA()
     {
-
         for (int iy = 0; iy < n; iy++)
         {
             for (int ix = 0; ix < m; ix++)
@@ -79,6 +94,8 @@ class CG_Storage
             }
         }
     }
+
+    
     void calculateRHS()
     {
         // memset(_rhs, 0, m * n * sizeof(double));

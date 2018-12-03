@@ -1,6 +1,5 @@
 #include "CG_Driver.h"
 
-
 using namespace Nova;
 
 int main(int argc, char const *argv[])
@@ -19,6 +18,9 @@ int main(int argc, char const *argv[])
     Grid<T,d> * grid = new Grid<T,d>(T_INDEX(counts), range);
     CG_Storage<T,d> storage(*grid);
 
+
+    storage.setting();
+    storage.initialize();
     storage.calculateA();
     storage.calculateRHS();
     
