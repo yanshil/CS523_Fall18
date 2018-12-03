@@ -28,40 +28,45 @@ class CG_System : public Krylov_System_Base<T>
     {
     }
 
+    // result <- A * v
     void Multiply(const Vector_Base &v, Vector_Base &result) const
     {
         Array<TV> &v_array = CG_Vector<T, d>::CG_Array(const_cast<Vector_Base &>(v));
         Array<TV> &result_array = CG_Vector<T, d>::CG_Array(result);
 
-        // Array<TV> G(v_array.size()),K(v_array.size());
+        // Log::cout << "v.size = " << v_array.size() << ", result.size = " << result_array.size() << std::endl;
+
         result_array.Fill(TV());
+
+        TV sum = TV();
 
         for (int iy = 0; iy < storage.n; iy++)
         {
             for (int ix = 0; ix < storage.m; ix++)
             {
                 int idx = iy * storage.m + ix;
-                result_array(idx) = storage._Adiag(idx) * v_array(idx);
+                sum = storage._Adiag(idx) * v_array(idx);
 
                 if (ix > 0)
                 { // if u.previous valid
-                    result_array(idx) += storage._Aplusi(idx - 1) * v_array(idx - 1);
+                    sum += storage._Aplusi(idx - 1) * v_array(idx - 1);
                 }
 
                 if (iy > 0)
                 {
-                    result_array(idx) += storage._Aplusj(idx - storage.m) * v_array(idx - storage.m);
+                    sum += storage._Aplusj(idx - storage.m) * v_array(idx - storage.m);
                 }
 
                 if (ix < storage.m - 1)
                 {
-                    result_array(idx) += storage._Aplusi(idx) * v_array(idx + 1);
+                    sum += storage._Aplusi(idx) * v_array(idx + 1);
                 }
 
                 if (iy < storage.n - 1)
                 {
-                    result_array(idx) += storage._Aplusj(idx) * v_array(idx + storage.m);
+                    sum += storage._Aplusj(idx) * v_array(idx + storage.m);
                 }
+                result_array(idx) = sum;
             }
         }
     }
@@ -70,6 +75,8 @@ class CG_System : public Krylov_System_Base<T>
     {
         const Array<TV> &x_array = CG_Vector<T, d>::CG_Array(x);
         const Array<TV> &y_array = CG_Vector<T, d>::CG_Array(y);
+
+        // Log::cout << "x.size = " << x_array.size() << ", y.size = " << x_array.size() << std::endl;
 
         double result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)

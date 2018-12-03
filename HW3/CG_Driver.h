@@ -46,10 +46,7 @@ class CG_Driver
         // solve
         cg.Solve(cg_system, cg_x, cg_b, cg_q, cg_s, cg_r, cg_k, cg_z, storage.cg_tolerance, 0, storage.cg_iterations);
 
-        // for (int i = 0; i < storage.size; i++)
-        // {
-        //     std::cout << delta_X(i) << ", " << std::endl;
-        // }
+
 
         // T maxError = 0.0;
         // for (int iy = 0; iy < storage.n; iy++)

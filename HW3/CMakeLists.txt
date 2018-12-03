@@ -3,8 +3,15 @@ cmake_minimum_required (VERSION 2.8.11)
 project(HW3)
 
 add_executable(HW3 ${SRC} "main.cpp")
+add_executable(unitTest ${SRC} "unitTest.cpp")
 
 target_link_libraries(HW3
+    PRIVATE
+    nova::tools
+    nova::geometry
+)
+
+target_link_libraries(unitTest
     PRIVATE
     nova::tools
     nova::geometry
