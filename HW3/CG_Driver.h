@@ -39,8 +39,6 @@ class CG_Driver
         CG_System<T, d> cg_system(storage);
         Conjugate_Gradient<T> cg;
 
-        // T b_norm = cg_system.Convergence_Norm(cg_b);
-
         cg.print_residuals = true;
         cg.print_diagnostics = true;
         cg.restart_iterations = storage.cg_restart_iterations;

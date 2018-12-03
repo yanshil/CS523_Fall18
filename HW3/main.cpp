@@ -32,6 +32,8 @@ int main(int argc, char const *argv[])
     // {
     //     std::cout << storage._Adiag(i) << ", "<< std::endl;
     // }
+    std::cout <<"one_over_dX_square = " << storage.one_over_dX_square<<std::endl;
+    std::cout <<"grid->one_over_dX = " << grid->one_over_dX<<std::endl;
 
     return 0;
 }

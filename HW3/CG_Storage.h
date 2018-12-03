@@ -19,13 +19,13 @@ class CG_Storage
   public:
     T_INDEX counts;
     int size, m, n;
-    int newton_iterations, cg_iterations, cg_restart_iterations;
+    int cg_iterations, cg_restart_iterations;
     T cg_tolerance;
 
     Array<TV> _Adiag;
     Array<TV> _Aplusi;
     Array<TV> _Aplusj;
-    T scale;
+    T one_over_dX_square;
 
     Array<TV> _rhs; // Right Hand Size
     int *_BF;       // Boundary Flag: -1 for Inertia and 0 for Dirichlet and 1 for Exteria
@@ -40,17 +40,18 @@ class CG_Storage
         n = counts(1);
 
         T hx = grid.one_over_dX.Max();
-        scale = hx * hx;
+        one_over_dX_square = hx * hx;
     }
 
     ~CG_Storage()
     {
     }
 
-    void setting(int cg_iterations_input = 600, int cg_restart_iterations_input = 100)
+    void setting(int cg_tolerance_input = 1e-5, int cg_iterations_input = 600, int cg_restart_iterations_input = 100)
     {
         cg_iterations = cg_iterations_input;
         cg_restart_iterations = cg_restart_iterations_input;
+        cg_tolerance = cg_tolerance_input;
     }
 
     void initialize()
@@ -71,9 +72,9 @@ class CG_Storage
                 int idx = iy * m + ix;
                 if (ix < m - 1) // if u.next.valid() !exterior
                 {
-                    _Adiag(idx) += scale;     // _Adiag() + 1
-                    _Adiag(idx + 1) += scale; // _AnextU.diag() + 1
-                    _Aplusi(idx) = -scale;
+                    _Adiag(idx) += one_over_dX_square;     // _Adiag() + 1
+                    _Adiag(idx + 1) += one_over_dX_square; // _AnextU.diag() + 1
+                    _Aplusi(idx) = -one_over_dX_square;
                 }
                 else
                 {
@@ -82,9 +83,9 @@ class CG_Storage
 
                 if (iy < n - 1) //if v.next.valid()
                 {
-                    _Adiag(idx) += scale;
-                    _Adiag(idx + m) += scale;
-                    _Aplusj(idx) = -scale;
+                    _Adiag(idx) += one_over_dX_square;
+                    _Adiag(idx + m) += one_over_dX_square;
+                    _Aplusj(idx) = -one_over_dX_square;
                 }
                 else
                 {
@@ -103,9 +104,12 @@ class CG_Storage
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                _rhs(idx) = 4;
+                _rhs(idx) = 0;
             }
         }
+
+        // test
+        _rhs(10) = 1;
     }
 };
 } // namespace Nova

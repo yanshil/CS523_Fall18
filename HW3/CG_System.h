@@ -75,9 +75,10 @@ class CG_System : public Krylov_System_Base<T>
         for (size_t i = 0; i < storage.size; ++i)
         {
             // TV x0 = x_array(i);
-            // TV y0 = x_array(i);
-            // result += x0.Max() * y0.Max();
-            result += x_array(i).Dot_Product(y_array(i));
+            // TV y0 = y_array(i);
+            // result += x0(0) * y0(0);
+            // result += x_array(i).Dot_Product(y_array(i));
+            result += x_array(i).Dot_Product(y_array(i)) / d;
         }
         return result;
     }
@@ -88,14 +89,12 @@ class CG_System : public Krylov_System_Base<T>
 
         T result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)
-            result = std::max(result, x_array(i).Norm());
-            // result = std::max(result, x_array(i).Abs().Max());
+            // result = std::max(result, x_array(i).Norm());
+            result = std::max(result, x_array(i).Abs().Max());
         return result;
     }
 
-    void Project(Vector_Base &x) const
-    {
-    }
+    void Project(Vector_Base &x) const {}
 
     void Set_Boundary_Conditions(Vector_Base &v) const {}
     void Project_Nullspace(Vector_Base &x) const {}
