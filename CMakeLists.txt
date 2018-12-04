@@ -7,5 +7,6 @@ if(ENABLE_CS523)
   #add_subdirectory(Fluid2)
   #add_subdirectory(0-test)
   add_subdirectory(0-CG)
+  # add_subdirectory(HW3)
 endif()
 
