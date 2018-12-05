@@ -2,13 +2,13 @@
 #define CELLSIZE 16
 
 // 16×16 ,32×32, 64×64, 128×128 and 256×256
-// 25, 51, 102, 207, 420
+// Error:
+// Iterations:  25, 51, 102, 207, 420
 
 using namespace Nova;
 
 int main(int argc, char const *argv[])
 {
-
     enum
     {
         d = 2

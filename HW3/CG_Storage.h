@@ -90,6 +90,7 @@ class CG_Storage
             {
                 int idx = iy * m + ix;
 
+                //======= That's for Exterior Problem =======================
                 // if (ix < m - 1) // if u.next.valid() !exterior
                 // {
                 //     _Adiag(idx) += 1;     // _Adiag() + 1
@@ -111,8 +112,6 @@ class CG_Storage
                 // {
                 //     _Aplusj(idx) = 0;
                 // }
-
-
                 //========================================
 
                 _Adiag(idx) = 4;
@@ -161,7 +160,6 @@ class CG_Storage
                 int idx = iy * m + ix;
                 // Get center of cell (ix, iy)
                 double x = -0.5 + ix * dX + dX / 2.0, y = -0.5 + iy * dY + dY / 2.0;
-                // printf("(%d, %d) with idx = %d, coordinate = (%.3f, %.3f)\n", ix, iy, idx, x, y);
                 double phi_tmp = x * x + y * y - radius_square;
 
                 // Inside Circle
