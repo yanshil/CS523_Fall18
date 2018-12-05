@@ -69,7 +69,7 @@ class CG_Storage
             TV tmp = _Adiag(i);
             std::cout << tmp(0) << ", ";
 
-            if ((i + 1) % 16 == 0)
+            if ((i + 1) % this->m == 0)
             {
                 std::cout << "\n";
             }
@@ -122,6 +122,12 @@ class CG_Storage
     }
 
     //---------------------------------------------------
+    void printAFromStorage()
+    {
+
+
+    }
+
     void testA()
     {
         // Adiag(6,0)

@@ -1,4 +1,5 @@
 #include "CG_Driver.h"
+#define CELLSIZE 4
 
 using namespace Nova;
 
@@ -17,7 +18,7 @@ void printArray(Array<TV> array, int size)
         TV tmp = array(i);
         std::cout << tmp(0) << ", ";
 
-        if ((i + 1) % 16 == 0)
+        if ((i + 1) % CELLSIZE == 0)
         {
             std::cout << "\n";
         }
@@ -29,10 +30,8 @@ void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size);
 
 int main(int argc, char const *argv[])
 {
-
-    int counts = 16;
     Range<T, d> range(TV(-0.5), TV(0.5));
-    Grid<T, d> *grid = new Grid<T, d>(T_INDEX(counts), range);
+    Grid<T, d> *grid = new Grid<T, d>(T_INDEX(CELLSIZE), range);
     CG_Storage<T, d> storage(*grid);
 
     storage.setting();
@@ -45,6 +44,7 @@ int main(int argc, char const *argv[])
     CG_System<T, d> cg_system(storage);
 
     Array<TV> result(storage.size);
+
     // Will Print A
     test1(cg_system, result, storage.size);
     // storage.printAdiag();
@@ -65,12 +65,13 @@ void unitVector(Array<TV> &e, int j, int size)
 void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size)
 {
     CG_Vector<T, d> cg_result(result);
-    for (int i = 0; i < size; i++)
-    {
 
-        for (int j = 0; j < size; j++)
+    for (int j = 0; j < size; j++)
+    {
+        for (int i = 0; i < size; i++)
         {
-            int idx = j * 16 + i;
+            int idx = j * size + i;
+            
             Array<TV> e1, e2;
             unitVector(e1, i, size);
             unitVector(e2, j, size);
@@ -79,15 +80,18 @@ void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size)
 
             cg_system.Multiply(cg_e1, cg_result);
             double re = cg_system.Inner_Product(cg_e2, cg_result);
-            // std::cout <<"re(" << i << ")= " << re;
-            printf("%3.1f", re);
-            if ((idx + 1) % 256 == 0)
+
+
+            printf("%3.0f", re);
+
+            if ((idx + 1) % (CELLSIZE * CELLSIZE) == 0)
             {
                 std::cout << "\n";
             }
             else{
                 std::cout <<",";
             }
+
         }
     }
     std::cout << std::endl;
@@ -97,7 +101,6 @@ void test2()
 {
     // Random x and y
 
-    //x^T A y = y^T A x
+    // x^T A y = y^T A x
     // if A is symmetric, compute x^T A y an y^T A x and check if equal
-
 }
