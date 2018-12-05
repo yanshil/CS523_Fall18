@@ -1,6 +1,13 @@
-## Usage
+## Build
 
 * Build with `Nova` Library.
+* Copy folder `HW3` to `Nova/Project/` and ccmake the project in `Nova/build`
+* Enable 'USE_DOUBLES` when building the project.
+
+
+## Usage
+
+* Run with `./bin/HW3`. If parameter `-size` is not defined, will be set as 16 by default.
 
 ```
 ./bin/HW3 -size 16 16
