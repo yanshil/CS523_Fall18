@@ -37,6 +37,7 @@ private:
   T *_p;
 
   void calculateRHS();
+  void calculateA();
   void setBoundaryCondition();
   void project_GS(int limit, T timestep, bool output = true);
   void applyPressure(T timestep);
@@ -82,7 +83,7 @@ public:
 
     for (int axis = 0; axis < d; axis++)
       delete[] _v[axis];
-    
+
     delete[] _rhs;
     delete[] _p;
   }
@@ -113,15 +114,17 @@ public:
       }
     }
   }
-  
+
   void unitTest_tentProjection(T timestep)
   {
     // RHS
     memset(_rhs, 0, size * sizeof(T));
-    _rhs[grid->index2offset(T_INDEX{6,6}, grid->counts)] = 1;
+    _rhs[7740] = 1;
     project_GS(1000, timestep, false);
     applyPressure(timestep);
-    printPressure();
+    // printPressure();
+    _v[0]->printPhi();
+    _v[1]->printPhi();
   }
 
   ////===============================================================

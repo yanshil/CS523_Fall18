@@ -59,7 +59,7 @@ class FluidQuantity
         {
             simulation_counts(axis) += 1;
             // TODO: Fix
-            simulation_domain.max_corner(axis) += grid.dX(axis) - grid.dX(axis)*1e-03;
+            simulation_domain.max_corner(axis) += grid.dX(axis) - grid.dX(axis) * 1e-03;
         }
 
         hx = grid.hx;
@@ -67,6 +67,9 @@ class FluidQuantity
         size = simulation_counts.Product();
         _Phi = new T[size];
         _Phi_new = new T[size];
+
+        std::cout << "simulation count: " << simulation_counts << std::endl;
+        printf("axis = %d, size = %d\n", axis, size);
 
         memset(_Phi, 0, size * sizeof(T));
     }
@@ -80,7 +83,7 @@ class FluidQuantity
     {
         return grid->index2offset(index, simulation_counts);
     }
-    
+
     T_INDEX offset2index(const int os) const
     {
         return grid->offset2index(os, simulation_counts);
@@ -107,22 +110,27 @@ class FluidQuantity
 
     T linp(TV location) const;
     void advect(T timestep, FluidQuantity *_v[d]);
-    void addInflow(const T_INDEX & index, const T input);
+    void addInflow(const T_INDEX &index, const T input);
 
     void printPhi()
     {
-        std::cout << "axis = : " << axis;
+        // std::cout << "axis = : " << axis << std::endl;
+
+        printf("=========================: m= %d, size = %d\n", simulation_counts[0], size);
 
         for (int i = 0; i < size; i++)
         {
-            if (i % simulation_counts[0] == 0)
-            {
-                std::cout << "\n";
-            }
-            std::cout << _Phi[i] << ", ";
-        }
+            printf("%.1f", _Phi[i]);
 
-        std::cout << "\n================================" << std::endl;
+            if ((i + 1) % simulation_counts[0] == 0)
+            {
+                printf("\n");
+            }
+            else
+            {
+                printf(",");
+            }
+        }
     }
 };
 

@@ -1,7 +1,7 @@
 #include <GL/glut.h>
 #include <iostream>
 #include "FluidSolver.h"
-#define CELLCOUNTS 16
+#define CELLCOUNTS 128
 
 using namespace Nova;
 
@@ -19,5 +19,6 @@ int main(int argc, char const *argv[])
     FluidSolver<T, d> *solver = new FluidSolver<T, d>(grid, 1);
 
     solver->unitTest_tentProjection(0.01);
+    
     return 0;
 }

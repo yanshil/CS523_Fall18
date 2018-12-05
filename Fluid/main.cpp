@@ -75,8 +75,8 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    solver->addInflow(T_INDEX{8, 1}, T_INDEX{9,2}, -1, 1);
-    solver->addInflow(T_INDEX{8, 1}, T_INDEX{9,2}, 1, 1);
+    solver->addInflow(T_INDEX{57, 1}, T_INDEX{64,7}, -1, 1);
+    solver->addInflow(T_INDEX{57, 1}, T_INDEX{64,7}, 1, 1);
     solver->update(timestep);
 }
 

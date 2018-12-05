@@ -4,7 +4,7 @@ add_executable(fluidsimulator
     FluidSolver.cpp
 )
 
-add_executable(unitTest
+add_executable(unitTest-Nova
     unitTest.cpp
     FluidQuantity.cpp
     FluidSolver.cpp
@@ -16,7 +16,7 @@ target_link_libraries(fluidsimulator
     nova::geometry
 )
 
-target_link_libraries(unitTest
+target_link_libraries(unitTest-Nova
     PRIVATE
     nova::tools
     nova::geometry

@@ -25,6 +25,11 @@ void FluidSolver<T, d>::calculateRHS()
     }
 }
 
+template <typename T, int d>
+void FluidSolver<T, d>::calculateA()
+{
+}
+
 /**
  * setBoundaryCondition
  * 
@@ -152,10 +157,13 @@ void FluidSolver<T, d>::update(T timestep)
     project_GS(1000, timestep);
     applyPressure(timestep);
 
-    advection(timestep);
     // _v[1]->printPhi();
     // _v[0]->printPhi();
+
+    advection(timestep);
     flip();
+
+    
 }
 
 /**
@@ -165,16 +173,34 @@ template <typename T, int d>
 void FluidSolver<T, d>::addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner,
                                   int axis, T input_value)
 {
-    T_INDEX currIndex;
-    for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
-    {
-        currIndex = T_INDEX() + iterator.Index();
+    int ix0 = min_corner(0);
+    int iy0 = min_corner(1);
+    int ix1 = max_corner(0);
+    int iy1 = max_corner(1);
+    int m = grid->counts(0);
+    int n = grid->counts(1);
 
-        if (axis == -1)
-            _d->addInflow(currIndex, input_value);
-        else
-            _v[axis]->addInflow(currIndex, input_value);
-    }
+    for (int y = std::max(iy0, 0); y < std::min(iy1, n); y++)
+        for (int x = std::max(ix0, 0); x < std::min(ix1, m); x++)
+        {
+            int idx = y * m + x;
+            if (axis == -1)
+                _d->addInflow(T_INDEX{x + 1,y + 1}, input_value);
+            else
+                _v[axis]->addInflow(T_INDEX{x + 1,y + 1}, input_value);
+        }
+
+    // T_INDEX currIndex;
+    // for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
+    // {
+    //     currIndex = T_INDEX() + iterator.Index();
+    //     printf("idx = %d\n", index2offset(currIndex));
+
+    //     if (axis == -1)
+    //         _d->addInflow(currIndex, input_value);
+    //     else
+    //         _v[axis]->addInflow(currIndex, input_value);
+    // }
 }
 //######################################################################
 template class Nova::FluidSolver<float, 2>;
