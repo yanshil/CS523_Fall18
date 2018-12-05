@@ -17,6 +17,7 @@ template <class T, int d>
 class CG_System : public Krylov_System_Base<T>
 {
     using TV = Vector<T, d>;
+    using T1 = Vector<T, 1>;
     using Base = Krylov_System_Base<T>;
     using Vector_Base = Krylov_Vector_Base<T>;
 
@@ -31,14 +32,14 @@ class CG_System : public Krylov_System_Base<T>
     // result <- A * v
     void Multiply(const Vector_Base &v, Vector_Base &result) const
     {
-        Array<TV> &v_array = CG_Vector<T, d>::CG_Array(const_cast<Vector_Base &>(v));
-        Array<TV> &result_array = CG_Vector<T, d>::CG_Array(result);
+        Array<T1> &v_array = CG_Vector<T, d>::CG_Array(const_cast<Vector_Base &>(v));
+        Array<T1> &result_array = CG_Vector<T, d>::CG_Array(result);
 
         // Log::cout << "v.size = " << v_array.size() << ", result.size = " << result_array.size() << std::endl;
 
-        result_array.Fill(TV());
+        result_array.Fill(T1());
 
-        TV sum = TV();
+        T1 sum = T1();
 
         for (int iy = 0; iy < storage.n; iy++)
         {
@@ -73,26 +74,22 @@ class CG_System : public Krylov_System_Base<T>
 
     double Inner_Product(const Vector_Base &x, const Vector_Base &y) const
     {
-        const Array<TV> &x_array = CG_Vector<T, d>::CG_Array(x);
-        const Array<TV> &y_array = CG_Vector<T, d>::CG_Array(y);
+        const Array<T1> &x_array = CG_Vector<T, d>::CG_Array(x);
+        const Array<T1> &y_array = CG_Vector<T, d>::CG_Array(y);
 
         // Log::cout << "x.size = " << x_array.size() << ", y.size = " << x_array.size() << std::endl;
 
         double result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)
         {
-            // TV x0 = x_array(i);
-            // TV y0 = y_array(i);
-            // result += x0(0) * y0(0);
-            // result += x_array(i).Dot_Product(y_array(i));
-            result += x_array(i).Dot_Product(y_array(i)) / d;
+            result += x_array(i).Dot_Product(y_array(i));
         }
         return result;
     }
 
     T Convergence_Norm(const Vector_Base &x) const
     {
-        const Array<TV> &x_array = CG_Vector<T, d>::CG_Array(x);
+        const Array<T1> &x_array = CG_Vector<T, d>::CG_Array(x);
 
         T result = (T)0.;
         for (size_t i = 0; i < storage.size; ++i)

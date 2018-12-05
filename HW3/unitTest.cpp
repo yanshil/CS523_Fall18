@@ -9,13 +9,14 @@ enum
 };
 using T = double;
 using TV = Vector<T, d>;
+using T1 = Vector<T, 1>;
 using T_INDEX = Vector<int, d>;
 
-void printArray(Array<TV> array, int size)
+void printArray(Array<T1> array, int size)
 {
     for (int i = 0; i < size; i++)
     {
-        TV tmp = array(i);
+        T1 tmp = array(i);
         std::cout << tmp(0) << ", ";
 
         if ((i + 1) % CELLSIZE == 0)
@@ -26,7 +27,7 @@ void printArray(Array<TV> array, int size)
     std::cout << std::endl;
 }
 
-void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size);
+void test1(CG_System<T, d> &cg_system, Array<T1> &result, int size);
 
 int main(int argc, char const *argv[])
 {
@@ -43,7 +44,7 @@ int main(int argc, char const *argv[])
     // driver.Execute();
     CG_System<T, d> cg_system(storage);
 
-    Array<TV> result(storage.size);
+    Array<T1> result(storage.size);
 
     // Will Print A
     test1(cg_system, result, storage.size);
@@ -55,14 +56,14 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-void unitVector(Array<TV> &e, int j, int size)
+void unitVector(Array<T1> &e, int j, int size)
 {
     e.resize(size);
-    e.Fill(TV());
+    e.Fill(T1());
     e(j) = 1;
 }
 
-void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size)
+void test1(CG_System<T, d> &cg_system, Array<T1> &result, int size)
 {
     CG_Vector<T, d> cg_result(result);
 
@@ -72,7 +73,7 @@ void test1(CG_System<T, d> &cg_system, Array<TV> &result, int size)
         {
             int idx = j * size + i;
             
-            Array<TV> e1, e2;
+            Array<T1> e1, e2;
             unitVector(e1, i, size);
             unitVector(e2, j, size);
 

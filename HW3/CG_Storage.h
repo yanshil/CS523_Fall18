@@ -14,6 +14,7 @@ template <class T, int d>
 class CG_Storage
 {
     using TV = Vector<T, d>;
+    using T1 = Vector<T, 1>;
     using T_INDEX = Vector<int, d>;
 
   public:
@@ -22,12 +23,12 @@ class CG_Storage
     int cg_iterations, cg_restart_iterations;
     T cg_tolerance;
 
-    Array<TV> _Adiag;
-    Array<TV> _Aplusi;
-    Array<TV> _Aplusj;
+    Array<T1> _Adiag;
+    Array<T1> _Aplusi;
+    Array<T1> _Aplusj;
     T one_over_dX_square;
 
-    Array<TV> _rhs; // Right Hand Size
+    Array<T1> _rhs; // Right Hand Size
     int *_BF;       // Boundary Flag: -1 for Inertia and 0 for Dirichlet and 1 for Exteria
 
     // ==============================================================
@@ -66,7 +67,7 @@ class CG_Storage
     {
         for (int i = 0; i < size; i++)
         {
-            TV tmp = _Adiag(i);
+            T1 tmp = _Adiag(i);
             std::cout << tmp(0) << ", ";
 
             if ((i + 1) % this->m == 0)

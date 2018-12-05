@@ -16,6 +16,7 @@ template <class T, int d>
 class CG_Driver
 {
     using TV = Vector<T, d>;
+    using T1 = Vector<T, 1>;
     int size;
 
   public:
@@ -30,10 +31,10 @@ class CG_Driver
 
     void Execute()
     {
-        Array<TV> rhs = storage._rhs;
+        Array<T1> rhs = storage._rhs;
 
-        Array<TV> delta_X(size);
-        Array<TV> temp_q(size), temp_s(size), temp_r(size), temp_k(size), temp_z(size);
+        Array<T1> delta_X(size);
+        Array<T1> temp_q(size), temp_s(size), temp_r(size), temp_k(size), temp_z(size);
         CG_Vector<T, d> cg_x(delta_X), cg_b(rhs), cg_q(temp_q), cg_s(temp_s), cg_r(temp_r), cg_k(temp_k), cg_z(temp_z);
 
         CG_System<T, d> cg_system(storage);
