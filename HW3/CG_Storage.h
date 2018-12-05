@@ -21,11 +21,13 @@ class CG_Storage
     T_INDEX counts;
     int size, m, n;
     int cg_iterations, cg_restart_iterations;
+    double dX, dY;
     T cg_tolerance;
 
     Array<T1> _Adiag;
     Array<T1> _Aplusi;
     Array<T1> _Aplusj;
+    Array<T1> _trueValue;
     T one_over_dX_square;
 
     Array<T1> _rhs; // Right Hand Size
@@ -39,6 +41,8 @@ class CG_Storage
         // Specify convenience for 2D
         m = counts(0);
         n = counts(1);
+        dX = grid.dX(0);
+        dY = grid.dX(1);
 
         T hx = grid.one_over_dX.Max();
         one_over_dX_square = hx * hx;
@@ -61,14 +65,14 @@ class CG_Storage
         _Aplusi.resize(size);
         _Aplusj.resize(size);
         _rhs.resize(size);
+        _trueValue.resize(size);
     }
 
     void printAdiag()
     {
         for (int i = 0; i < size; i++)
         {
-            T1 tmp = _Adiag(i);
-            std::cout << tmp(0) << ", ";
+            std::cout << _Adiag(i) << ", ";
 
             if ((i + 1) % this->m == 0)
             {
@@ -116,24 +120,92 @@ class CG_Storage
     void calculateRHS()
     {
         // memset(_rhs, 0, m * n * sizeof(double));
-        for(int idx = 0; idx < size; idx++)
+        for (int idx = 0; idx < size; idx++)
         {
             _rhs(idx) = -4;
+        }
+    }
+
+    void calculateTrueValue()
+    {
+        double radius_square = 0.25 * 0.25;
+        for (int iy = 0; iy < n; iy++)
+        {
+            for (int ix = 0; ix < m; ix++)
+            {
+                int idx = iy * m + ix;
+                double x = ix * dX, y = iy * dY;
+
+                double phi_tmp = x * x + y * y - radius_square;
+                
+                // Inside Circle
+                if (phi_tmp <= 0) {
+                    _trueValue(idx) = phi_tmp;
+                }
+                else
+                {
+                    _trueValue(idx) = 0;
+                }
+            }
         }
     }
 
     //---------------------------------------------------
     void printAFromStorage()
     {
+        for (int j = 0; j < size; j++)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                int idx = j * size + i;
+                double re;
 
+                if (i == j)
+                {
+                    re = _Adiag(i).Max();
+                }
+                else if ((i + 1) == j)
+                {
+                    re = _Aplusi(i).Max();
+                }
+                else if ((i - 1) == j)
+                {
+                    re = _Aplusi(j).Max();
+                }
+                else if ((i + m) == j)
+                {
+                    re = _Aplusj(i).Max();
+                }
+                else if ((i - m) == j)
+                {
+                    re = _Aplusj(j).Max();
+                }
+                else
+                {
+                    re = 0;
+                }
 
+                printf("%3.0f", re);
+
+                if ((idx + 1) % size == 0)
+                {
+                    std::cout << "\n";
+                }
+                else
+                {
+                    std::cout << ",";
+                }
+            }
+        }
+
+        std::cout << std::endl;
     }
 
     void testA()
     {
-        // Adiag(6,0)
         _Adiag(10) = 1;
     }
+
     void testRHS()
     {
         for (int iy = 0; iy < n; iy++)
