@@ -2,7 +2,6 @@
 //! \file FluidQuantity.cpp
 //!#####################################################################
 #include "FluidQuantity.h"
-#include <nova/Tools/Utilities/Range_Iterator.h>
 
 using namespace Nova;
 
@@ -23,12 +22,13 @@ T FluidQuantity<T, d>::linp(TV location) const
 
     // Clamp location -> Inside Simulation Domain
     // TODO: What if clamped to a location that is the edge of simulation_domain and clamp_to_cell is out of bound?
+    // TODO: Fake Shrink for the domain in .h
     TV clamped_location = simulation_domain.Clamp(location);
 
     T_INDEX index = grid->Clamp_To_Cell(clamped_location);
 
-    // TV c000 = (axis == -1) ? grid->Center(index) : grid->Face(axis, index);
-    TV c000 = grid->Node(index);
+    TV c000 = (axis == -1) ? grid->Center(index) : grid->Face(axis, index);
+    // TV c000 = grid->Node(index);
 
     TV offsets = (clamped_location - c000) * grid->one_over_dX;
 
@@ -37,6 +37,8 @@ T FluidQuantity<T, d>::linp(TV location) const
     T re = linp(x0, x1, offsets[1]);
 
     return re;
+
+    // TODO: 3D
 }
 /**
  * Advection 
@@ -66,20 +68,12 @@ void FluidQuantity<T, d>::advect(T timestep, FluidQuantity *_v[d])
  * 
  */
 template <typename T, int d>
-void FluidQuantity<T, d>::addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, const T input)
+void FluidQuantity<T, d>::addInflow(const T_INDEX &index, const T input)
 {
-    Range<int, d> range(min_corner, max_corner);
-
-    T_INDEX currIndex;
-    for (Range_Iterator<d> iterator(range); iterator.Valid(); iterator.Next())
+    if (std::fabs(at(index)) < std::fabs(input))
     {
-        currIndex = T_INDEX() + iterator.Index();
-
-        if (std::fabs(at(currIndex)) < std::fabs(input))
-        {
-            // std::cout << "addinflow(" << currIndex << ") = " << input << std::endl;
-            at(currIndex) = input;
-        }
+        at(index) = input;
+        std::cout << "addinflow(" << index << ") = " << input << std::endl;
     }
 }
 //######################################################################

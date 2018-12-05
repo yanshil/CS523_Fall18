@@ -20,20 +20,21 @@ class FluidSimulator_Grid : public Grid<T, d>
     using T_INDEX = Vector<int, d>;
 
   public:
+    // Max Grid Cell size
+    T hx;
 
     FluidSimulator_Grid()
-        :Base()
+        : Base()
     {
-
     }
 
     FluidSimulator_Grid(const T_INDEX &counts_input, const Range<T, d> &domain_input)
         : Base(counts_input, domain_input)
     {
+        this->hx = this->dX.Max();
     }
     ~FluidSimulator_Grid()
     {
-
     }
 
     T_INDEX Next_Cell(const int axis, const T_INDEX &index) const
@@ -54,7 +55,7 @@ class FluidSimulator_Grid : public Grid<T, d>
     {
         // Becuase index in the grid start from (1,1)...
         T_INDEX tmp_index = index;
-        tmp_index += - T_INDEX(1);
+        tmp_index += -T_INDEX(1);
 
         int os = tmp_index[1] * dim[0] + tmp_index[0];
         if (d == 3)

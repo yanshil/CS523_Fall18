@@ -22,16 +22,22 @@ class FluidQuantity
     T *_Phi;
     T *_Phi_new;
 
-    FluidSimulator_Grid<T, d> *grid; // with grid size
+    // Grid with Inertia domain m, n, k
+    FluidSimulator_Grid<T, d> *grid;
 
+    // Face Indiicator
+    int axis;
+    // Grid Cell size
     T hx;
 
-    int axis; // indicate face offset
-
+    // Simulation Domain: For velocity[i], simulation_counts(i) = counts(i) + 1
     T_INDEX simulation_counts;
     Range<T, d> simulation_domain;
+
+    // Simulation Domain size.
     int size;
 
+    // 1D Linear Interpolate
     T linp(T a, T b, T delta) const
     {
         return a * (1 - delta) + b * delta;
@@ -42,6 +48,7 @@ class FluidQuantity
     {
         std::cout << "??" << std::endl;
     }
+
     FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis)
         : grid(&grid), axis(axis)
     {
@@ -51,8 +58,11 @@ class FluidQuantity
         if (axis != -1)
         {
             simulation_counts(axis) += 1;
-            simulation_domain.max_corner(axis) += grid.dX(axis);
+            // TODO: Fix
+            simulation_domain.max_corner(axis) += grid.dX(axis) - grid.dX(axis)*1e-03;
         }
+
+        hx = grid.hx;
 
         size = simulation_counts.Product();
         _Phi = new T[size];
@@ -70,6 +80,7 @@ class FluidQuantity
     {
         return grid->index2offset(index, simulation_counts);
     }
+    
     T_INDEX offset2index(const int os) const
     {
         return grid->offset2index(os, simulation_counts);
@@ -96,7 +107,7 @@ class FluidQuantity
 
     T linp(TV location) const;
     void advect(T timestep, FluidQuantity *_v[d]);
-    void addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, const T input);
+    void addInflow(const T_INDEX & index, const T input);
 
     void printPhi()
     {

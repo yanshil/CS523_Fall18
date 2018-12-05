@@ -1,11 +1,22 @@
 add_executable(fluidsimulator
-    #test.cpp
-    testRHS.cpp
+    main.cpp
+    FluidQuantity.cpp
+    FluidSolver.cpp
+)
+
+add_executable(unitTest
+    unitTest.cpp
     FluidQuantity.cpp
     FluidSolver.cpp
 )
 
 target_link_libraries(fluidsimulator
+    PRIVATE
+    nova::tools
+    nova::geometry
+)
+
+target_link_libraries(unitTest
     PRIVATE
     nova::tools
     nova::geometry

@@ -2,6 +2,7 @@
 //! \file FluidSolver.cpp
 //!#####################################################################
 #include "FluidSolver.h"
+#include <nova/Tools/Utilities/Range_Iterator.h>
 
 using namespace Nova;
 /**
@@ -11,14 +12,13 @@ template <typename T, int d>
 void FluidSolver<T, d>::calculateRHS()
 {
     memset(_rhs, 0, size * sizeof(T));
-
     for (int idx = 0; idx < size; idx++)
     {
         T_INDEX index = offset2index(idx);
 
         for (int axis = 0; axis < d; axis++)
         {
-            _rhs[idx] += (_v[axis]->at(grid->Next_Cell(axis, index)) -
+            _rhs[idx] -= (_v[axis]->at(grid->Next_Cell(axis, index)) -
                           _v[axis]->at(index)) /
                          hx;
         }
@@ -52,7 +52,7 @@ void FluidSolver<T, d>::setBoundaryCondition()
  * project
  */
 template <typename T, int d>
-void FluidSolver<T, d>::project(int limit, T timestep)
+void FluidSolver<T, d>::project_GS(int limit, T timestep, bool output)
 {
     T scale = timestep / rho / hx / hx;
     T maxDelta;
@@ -64,6 +64,7 @@ void FluidSolver<T, d>::project(int limit, T timestep)
         for (int idx = 0; idx < size; idx++)
         {
             T_INDEX index = offset2index(idx);
+
             T Aii = 0;
             T sum = 0;
 
@@ -91,12 +92,14 @@ void FluidSolver<T, d>::project(int limit, T timestep)
 
         if (maxDelta < 1e-5)
         {
-            // printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
+            if (output)
+                printf("Converge with %d iteration, with Norm1 = %f\n", iteration, maxDelta);
             return;
         }
     }
 
-    // printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
+    if (output)
+        printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
 }
 
 /**
@@ -107,18 +110,18 @@ template <typename T, int d>
 void FluidSolver<T, d>::applyPressure(T timestep)
 {
     T scale = timestep / rho / hx;
-    
-    for(int idx = 0; idx < size; idx++)
+
+    for (int idx = 0; idx < size; idx++)
     {
         T_INDEX index = offset2index(idx);
 
-        for(int axis = 0; axis < d; axis++)
+        for (int axis = 0; axis < d; axis++)
         {
-            _v[axis]->at(index) += _p[idx] * scale;
-            _v[axis]->at(grid->Next_Cell(axis, index)) -= _p[idx] * scale;
+            _v[axis]->at(index) -= _p[idx] * scale;
+            _v[axis]->at(grid->Next_Cell(axis, index)) += _p[idx] * scale;
         }
-
     }
+
     setBoundaryCondition();
 }
 
@@ -128,9 +131,7 @@ void FluidSolver<T, d>::advection(T timestep)
     _d->advect(timestep, _v);
 
     for (int axis = 0; axis < d; axis++)
-    {
         _v[axis]->advect(timestep, _v);
-    }
 }
 
 template <typename T, int d>
@@ -139,9 +140,7 @@ void FluidSolver<T, d>::flip()
     _d->flip();
 
     for (int axis = 0; axis < d; axis++)
-    {
         _v[axis]->flip();
-    }
 }
 /**
  * Update
@@ -150,12 +149,12 @@ template <typename T, int d>
 void FluidSolver<T, d>::update(T timestep)
 {
     calculateRHS();
-    project(1000, timestep);
+    project_GS(1000, timestep);
     applyPressure(timestep);
 
     advection(timestep);
-    _v[1]->printPhi();
-    _v[0]->printPhi();
+    // _v[1]->printPhi();
+    // _v[0]->printPhi();
     flip();
 }
 
@@ -164,13 +163,17 @@ void FluidSolver<T, d>::update(T timestep)
  */
 template <typename T, int d>
 void FluidSolver<T, d>::addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner,
-                                  const T &input_d, const TV &input_v)
+                                  int axis, T input_value)
 {
-    _d->addInflow(min_corner, max_corner, input_d);
-
-    for (int axis = 0; axis < d; axis++)
+    T_INDEX currIndex;
+    for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
     {
-        _v[axis]->addInflow(min_corner, max_corner, input_v(axis));
+        currIndex = T_INDEX() + iterator.Index();
+
+        if (axis == -1)
+            _d->addInflow(currIndex, input_value);
+        else
+            _v[axis]->addInflow(currIndex, input_value);
     }
 }
 //######################################################################
