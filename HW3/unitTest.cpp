@@ -57,9 +57,11 @@ int main(int argc, char const *argv[])
     // Should print RHS
     storage.calculateTrueValue();
 
+    printf("Calculated RHS: \n");
     test3(cg_system, storage, result);
 
     // print RHS
+    printf("True RHS: \n");
     for (int i = 0; i < storage.size; i++)
     {
         std::cout << storage._rhs(i) << ",";
@@ -67,6 +69,7 @@ int main(int argc, char const *argv[])
     std::cout << std::endl;
 
     // print true value
+    printf("True Phi: \n");
     for (int i = 0; i < storage.size; i++)
     {
         printf("%0.4f, ", storage._trueValue(i).Max());
@@ -149,8 +152,7 @@ void test3(CG_System<T, d> &cg_system, CG_Storage<T, d> &storage, Array<T1> &res
 
     for (int idx = 0; idx < storage.size; idx++)
     {
-        double re = result(idx).Max();
-        printf("%3.0f", re);
+        printf("%3.0f", result(idx).Max());
         if ((idx + 1) % storage.size == 0)
         {
             std::cout << "\n";

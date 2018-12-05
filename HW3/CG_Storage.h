@@ -134,7 +134,9 @@ class CG_Storage
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                double x = (ix + 0.5) * dX, y = (iy + 0.5) * dY;
+                // Get center of cell (ix, iy)
+                double x = -0.5 + ix * dX + dX / 2.0, y = -0.5 + iy * dY + dY / 2.0;
+                printf("(%d, %d) with idx = %d, coordinate = (%.3f, %.3f)\n", ix, iy, idx, x, y);
 
                 double phi_tmp = x * x + y * y - radius_square;
                 
