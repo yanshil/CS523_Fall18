@@ -134,7 +134,7 @@ class CG_Storage
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                double x = ix * dX, y = iy * dY;
+                double x = (ix + 0.5) * dX, y = (iy + 0.5) * dY;
 
                 double phi_tmp = x * x + y * y - radius_square;
                 
