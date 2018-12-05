@@ -54,35 +54,12 @@ int main(int argc, char const *argv[])
     // ============Test 2=======================
 
     // ============Test 3=======================
-    // Should print RHS
     storage.calculateTrueValue();
-
-    printf("Calculated RHS: \n");
     test3(cg_system, storage, result);
-
-    // print RHS
-    printf("True RHS: \n");
-    for (int i = 0; i < storage.size; i++)
-    {
-        std::cout << storage._rhs(i) << ", ";
-    }
-    std::cout << std::endl;
-
-    // print true value
-    printf("True Phi: \n");
-    for (int i = 0; i < storage.size; i++)
-    {
-        printf("%0.4f, ", storage._trueValue(i).Max());
-        
-        if ((i + 1) %  storage.m == 0) {
-            std::cout <<"\n";
-        }        
-    }
-    std::cout << std::endl;
 
     // ============print A=======================
 
-    // storage.printAFromStorage();
+    storage.printAFromStorage();
 
     // ============Aucxiliary Info=======================
 
@@ -120,6 +97,7 @@ void test1(CG_System<T, d> &cg_system, Array<T1> &result, int size)
             cg_system.Multiply(cg_e1, cg_result);
             double re = cg_system.Inner_Product(cg_e2, cg_result);
 
+            printf("Calculated A: \n");
             printf("%3.0f", re);
 
             if ((idx + 1) % size == 0)
@@ -150,6 +128,8 @@ void test3(CG_System<T, d> &cg_system, CG_Storage<T, d> &storage, Array<T1> &res
     // should get RHS = 4;
     cg_system.Multiply(cg_tv, cg_result);
 
+    printf("Calculated RHS: \n");
+
     for (int idx = 0; idx < storage.size; idx++)
     {
         printf("%3.0f", result(idx).Max());
@@ -160,6 +140,27 @@ void test3(CG_System<T, d> &cg_system, CG_Storage<T, d> &storage, Array<T1> &res
         else
         {
             std::cout << ",";
+        }
+    }
+    std::cout << std::endl;
+
+    // print RHS
+    printf("True RHS: \n");
+    for (int i = 0; i < storage.size; i++)
+    {
+        std::cout << storage._rhs(i) << ", ";
+    }
+    std::cout << std::endl;
+
+    // print true value
+    printf("True Phi: \n");
+    for (int i = 0; i < storage.size; i++)
+    {
+        printf("%0.4f, ", storage._trueValue(i).Max());
+
+        if ((i + 1) % storage.m == 0)
+        {
+            std::cout << "\n";
         }
     }
     std::cout << std::endl;

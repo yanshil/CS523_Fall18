@@ -52,7 +52,7 @@ class CG_Storage
     {
     }
 
-    void setting(int cg_tolerance_input = 1e-5, int cg_iterations_input = 600, int cg_restart_iterations_input = 100)
+    void setting(double cg_tolerance_input = 1e-5, int cg_iterations_input = 1000, int cg_restart_iterations_input = 1000)
     {
         cg_iterations = cg_iterations_input;
         cg_restart_iterations = cg_restart_iterations_input;
@@ -89,10 +89,35 @@ class CG_Storage
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
+
+                // if (ix < m - 1) // if u.next.valid() !exterior
+                // {
+                //     _Adiag(idx) += 1;     // _Adiag() + 1
+                //     _Adiag(idx + 1) += 1; // _AnextU.diag() + 1
+                //     _Aplusi(idx) = -1;
+                // }
+                // else
+                // {
+                //     _Aplusi(idx) = 0;
+                // }
+
+                // if (iy < n - 1) //if v.next.valid()
+                // {
+                //     _Adiag(idx) += 1;
+                //     _Adiag(idx + m) += 1;
+                //     _Aplusj(idx) = -1;
+                // }
+                // else
+                // {
+                //     _Aplusj(idx) = 0;
+                // }
+
+
+                //========================================
+
+                _Adiag(idx) = 4;
                 if (ix < m - 1) // if u.next.valid() !exterior
                 {
-                    _Adiag(idx) += 1;     // _Adiag() + 1
-                    _Adiag(idx + 1) += 1; // _AnextU.diag() + 1
                     _Aplusi(idx) = -1;
                 }
                 else
@@ -102,14 +127,14 @@ class CG_Storage
 
                 if (iy < n - 1) //if v.next.valid()
                 {
-                    _Adiag(idx) += 1;
-                    _Adiag(idx + m) += 1;
                     _Aplusj(idx) = -1;
                 }
                 else
                 {
                     _Aplusj(idx) = 0;
                 }
+                //=========================================
+
             }
         }
         _Adiag *= one_over_dX_square;
@@ -136,12 +161,12 @@ class CG_Storage
                 int idx = iy * m + ix;
                 // Get center of cell (ix, iy)
                 double x = -0.5 + ix * dX + dX / 2.0, y = -0.5 + iy * dY + dY / 2.0;
-                printf("(%d, %d) with idx = %d, coordinate = (%.3f, %.3f)\n", ix, iy, idx, x, y);
-
+                // printf("(%d, %d) with idx = %d, coordinate = (%.3f, %.3f)\n", ix, iy, idx, x, y);
                 double phi_tmp = x * x + y * y - radius_square;
-                
+
                 // Inside Circle
-                if (phi_tmp <= 0) {
+                if (phi_tmp <= 0)
+                {
                     _trueValue(idx) = phi_tmp;
                 }
                 else
