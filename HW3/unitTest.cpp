@@ -64,7 +64,7 @@ int main(int argc, char const *argv[])
     printf("True RHS: \n");
     for (int i = 0; i < storage.size; i++)
     {
-        std::cout << storage._rhs(i) << ",";
+        std::cout << storage._rhs(i) << ", ";
     }
     std::cout << std::endl;
 
