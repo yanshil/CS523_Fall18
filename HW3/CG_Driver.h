@@ -47,19 +47,17 @@ class CG_Driver
         // solve
         cg.Solve(cg_system, cg_x, cg_b, cg_q, cg_s, cg_r, cg_k, cg_z, storage.cg_tolerance, 0, storage.cg_iterations);
 
-
-
-        // T maxError = 0.0;
-        // for (int iy = 0; iy < storage.n; iy++)
-        // {
-        //     for (int ix = 0; ix < storage.m; ix++)
-        //     {
-        //         int idx = iy * storage.m + ix;
-        //         T trueValue = (ix * ix + iy * iy - 0.25 * 0.25);
-        //         maxError = std::max(maxError, std::fabs(delta_X(idx) - trueValue));
-        //     }
-        // }
-        // std::cout << "1-Norm = " << maxError << std::endl;
+        T maxError = 0.0;
+        for (int iy = 0; iy < storage.n; iy++)
+        {
+            for (int ix = 0; ix < storage.m; ix++)
+            {
+                int idx = iy * storage.m + ix;
+                T1 tmp = delta_X(idx) - storage._trueValue(idx);
+                maxError = std::max(maxError, std::fabs(tmp.Max()));
+            }
+        }
+        std::cout << "1-Norm = " << maxError << std::endl;
     }
 };
 } // namespace Nova
