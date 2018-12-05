@@ -68,8 +68,9 @@ class FluidQuantity
         _Phi = new T[size];
         _Phi_new = new T[size];
 
-        std::cout << "simulation count: " << simulation_counts << std::endl;
-        printf("axis = %d, size = %d\n", axis, size);
+        // std::cout << "simulation count: " << simulation_counts << std::endl;
+        // printf("axis = %d, size = %d\n", axis, size);
+        // printf("\n");
 
         memset(_Phi, 0, size * sizeof(T));
     }
