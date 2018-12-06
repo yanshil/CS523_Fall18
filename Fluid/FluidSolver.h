@@ -23,6 +23,46 @@ class FluidSolver
     T *_rhs;
     T *_p;
 
+    int index2offset(const T_INDEX &index)
+    {
+        return grid->index2offset(index, grid->counts);
+    }
+
+    T_INDEX offset2index(const int os)
+    {
+        return grid->offset2index(os, grid->counts);
+    }
+
+  public:
+    FluidSolver(FluidSimulator_Grid<T, d> &grid, T rho) : grid(&grid), rho(rho)
+    {
+        this->hx = grid.hx;
+        this->size = grid.counts.Product();
+
+        _d = new FluidQuantity<T, d>(grid, -1);
+
+        for (int axis = 0; axis < d; axis++)
+            _v[axis] = new FluidQuantity<T, d>(grid, axis);
+
+        _rhs = new T[size];
+        _p = new T[size];
+    }
+
+    ~FluidSolver()
+    {
+        delete _d;
+        for (int axis = 0; axis < d; axis++)
+            delete _v[axis];
+
+        delete[] _rhs;
+        delete[] _p;
+    }
+
+    const T *rhs() const
+    {
+        return _rhs;
+    }
+
     void calculateRHS()
     {
         memset(_rhs, 0, size * sizeof(T));
@@ -35,7 +75,6 @@ class FluidSolver
         }
     }
 
-    // TODO : 3D
     void project_GS(int limit, T timestep, bool output = true)
     {
         T scale = timestep / rho / hx / hx;
@@ -116,41 +155,6 @@ class FluidSolver
         setBoundaryCondition();
     }
 
-    int index2offset(const T_INDEX &index)
-    {
-        return grid->index2offset(index, grid->counts);
-    }
-
-    T_INDEX offset2index(const int os)
-    {
-        return grid->offset2index(os, grid->counts);
-    }
-
-  public:
-    FluidSolver(FluidSimulator_Grid<T, d> &grid, T rho) : grid(&grid), rho(rho)
-    {
-        this->hx = grid.hx;
-        this->size = grid.counts.Product();
-
-        _d = new FluidQuantity<T, d>(grid, -1);
-
-        for (int axis = 0; axis < d; axis++)
-            _v[axis] = new FluidQuantity<T, d>(grid, axis);
-
-        _rhs = new T[size];
-        _p = new T[size];
-    }
-
-    ~FluidSolver()
-    {
-        delete _d;
-        for (int axis = 0; axis < d; axis++)
-            delete _v[axis];
-
-        delete[] _rhs;
-        delete[] _p;
-    }
-
     void initialize()
     {
         for (int axis = 0; axis < d; axis++)
@@ -169,13 +173,18 @@ class FluidSolver
 
         //Advection
         _d->advect(timestep, _v);
-        _v[0]->advect(timestep, _v);
-        _v[1]->advect(timestep, _v);
+        
+        for(int axis = 0; axis < d; axis++)
+            _v[axis]->advect(timestep, _v);
+        
 
         // Flip
         _d->flip();
-        _v[0]->flip();
-        _v[1]->flip();
+
+        for(int axis = 0; axis < d; axis++)
+            _v[axis]->flip();
+        
+
     }
 
     void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, T value)
