@@ -7,7 +7,7 @@ using namespace Nova;
 
 enum
 {
-    d = 2
+    d = 3
 };
 using T = double;
 using TV = Vector<T, d>;
@@ -22,10 +22,13 @@ int main(int argc, char const *argv[])
     // Projection output as a tent-like plot
     T timestep = 0.01;
     int size = grid.counts.Product();
+    T_INDEX index = T_INDEX{60, 60, 60};
+    // z * m * n + y * m + x
+
 
     T* ptr_rhs = solver->rhs();
     memset(ptr_rhs, 0, size * sizeof(T));
-    solver->rhs()[7740] = 1;
+    solver->rhs()[59 * 128 * 128 + 59 * 128 + 59] = 100;
     solver->project_GS(1000, timestep, false);
     solver->applyPressure(timestep);
     
