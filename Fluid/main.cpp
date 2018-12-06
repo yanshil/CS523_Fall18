@@ -17,13 +17,14 @@ using TV = Vector<T, d>;
 
 //----------------------------------------------------
 
-double timestep = 0.01;
-double density = 1;
+T timestep = 0.01;
+T density = 1;
 
 int iterations = 0;
 
 FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
 FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 1);
+// FluidSolver<T,d> *solver = new FluidSolver<T,d>(CELLCOUNTS, CELLCOUNTS, density);
 
 int iteration = 1;
 //--------------------OpenGL--------------------
@@ -46,8 +47,8 @@ void drawGrid()
         {
             float yPos = -1.0 + y * quadSize;
 
-            T_INDEX index{x + 1, y + 1};
-            GLfloat color = solver->toRGB(index);
+            // T_INDEX index{x + 1, y + 1};
+            GLfloat color = solver->toRGB(x, y);
 
             glColor3f(color, color, color);
 
@@ -75,8 +76,10 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    solver->addInflow(T_INDEX{57, 1}, T_INDEX{64,7}, -1, 1);
-    solver->addInflow(T_INDEX{57, 1}, T_INDEX{64,7}, 1, 1);
+    // solver->addInflow(T_INDEX{57, 1}, T_INDEX{64, 7}, -1, 1);
+    // solver->addInflow(T_INDEX{57, 1}, T_INDEX{64, 7}, 1, 1);
+    solver->addInflow(57, 1, 64, 7, -1, 1);
+    solver->addInflow(57, 1, 64, 7, 1, 1);
     solver->update(timestep);
 }
 

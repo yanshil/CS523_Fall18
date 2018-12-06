@@ -74,7 +74,7 @@ class FluidSimulator_Grid : public Grid<T, d>
 
         if (d == 2)
             // y <- (os - x) / m
-            tmp_index[1] = (os - tmp_index[0]) / dim[1];
+            tmp_index[1] = (os - tmp_index[0]) / dim[0];
         else
         {
             // y <- (os - x) mod n
