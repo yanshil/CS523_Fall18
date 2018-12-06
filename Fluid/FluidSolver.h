@@ -373,7 +373,7 @@ class FluidSolver
         calculateRHS();
         //calculateA(timestep);
         //project_CG(1000);
-        project_GS(1000, timestep);
+        project_GS(1000, timestep, false);
         applyPressure(timestep);
 
         //Advection
@@ -389,16 +389,18 @@ class FluidSolver
 
     void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, T value)
     {
-        for (int y = std::max(iy0, 0); y < std::min(iy1, n); y++)
-            for (int x = std::max(ix0, 0); x < std::min(ix1, m); x++)
+
+        for (int x = std::max(ix0, 0); x < std::min(ix1, m); x++)
+            for (int y = std::max(iy0, 0); y < std::min(iy1, n); y++)
             {
                 int idx = y * m + x;
-                //printf("idx = %d\n", idx);
+                T_INDEX index = offset2index(idx);
+                std::cout << "index = " << index << std::endl;
                 if (axis == -1)
-                    _d->addInflow(x, y, value);
+                    _d->addInflow(index, value);
                 else
                 {
-                    _v[axis]->addInflow(x, y, value);
+                    _v[axis]->addInflow(index, value);
                 }
             }
     }
@@ -409,10 +411,13 @@ class FluidSolver
         for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
         {
             currIndex = T_INDEX() + iterator.Index();
-            if(axis == -1)
+            std::cout << "index = " << currIndex << std::endl;
+            if (axis == -1)
                 _d->addInflow(currIndex, value);
             else
+            {
                 _v[axis]->addInflow(currIndex, value);
+            }
         }
     }
 

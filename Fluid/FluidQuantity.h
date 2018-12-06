@@ -158,31 +158,12 @@ class FluidQuantity
         }
     }
 
-    void addInflow(int ix, int iy, T value)
-    {
-        // if(ix >= 0 & ix < m & iy >=0 & iy < n)
-        if (fabs(_Phi[iy * m + ix]) < fabs(value))
-        {
-            printf("Add Inflow in (%d, %d)\n", ix, iy);
-            _Phi[iy * m + ix] = value;
-        }
-    }
-
     void addInflow(const T_INDEX &index, T value)
     {
         // if(ix >= 0 & ix < m & iy >=0 & iy < n)
-        // if (fabs(at(index)) < fabs(value))
-        // {
-        //     printf("Add Inflow in (%d, %d)\n", index(0), index(1));
-        //     at(index) = value;
-        // }
-        int ix = index(0)-1;
-        int iy = index(1)-1;
-        if (fabs(_Phi[iy * m + ix]) < fabs(value))
-        {
-            printf("Add Inflow in (%d, %d)\n", ix, iy);
-            _Phi[iy * m + ix] = value;
-        }
+        if (fabs(at(index)) < fabs(value))
+            at(index) = value;
+
     }
 
     int index2offset(const T_INDEX &index) const
