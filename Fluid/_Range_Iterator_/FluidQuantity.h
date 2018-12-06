@@ -24,6 +24,12 @@ class FluidQuantity
     // Grid Cell size
     T hx;
 
+    // size grid
+    int m;
+    int n;
+
+    T ox, oy;
+
     // 1D Linear Interpolate between a and b in (0,1)
     T linp(T a, T b, T delta) const
     {
@@ -34,6 +40,14 @@ class FluidQuantity
     FluidQuantity(FluidSimulator_Grid<T, d> &grid, int axis)
         : grid(&grid), axis(axis)
     {
+        m = grid.counts[0];
+        n = grid.counts[1];
+
+        if (axis == 0)
+            m++;
+        if (axis == 1)
+            n++;
+
         this->simulation_counts = T_INDEX(grid.counts);
         this->hx = grid.hx;
         this->faceOffset = TV(0.5);
@@ -45,6 +59,9 @@ class FluidQuantity
         }
 
         this->size = simulation_counts.Product();
+
+        ox = (axis == 0) ? 0 : 0.5;
+        oy = (axis == 1) ? 0 : 0.5;
 
         _Phi = new T[size];
         _Phi_new = new T[size];
@@ -70,7 +87,7 @@ class FluidQuantity
 
     T at(int x, int y) const
     {
-        return _Phi[x + y * simulation_counts[0]];
+        return _Phi[x + y * m];
     }
 
     T at(const T_INDEX &index) const
@@ -80,7 +97,7 @@ class FluidQuantity
 
     T &at(int x, int y)
     {
-        return _Phi[x + y * simulation_counts[0]];
+        return _Phi[x + y * m];
     }
 
     T &at(const T_INDEX &index)

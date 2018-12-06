@@ -9,14 +9,16 @@ class FluidSolver
     using TV = Vector<T, d>;
     using T_INDEX = Vector<int, d>;
 
+    // FluidQuantity<T, d> *_d;
+    // FluidQuantity<T, d> *_u;
+    // FluidQuantity<T, d> *_v;
+
     // Density Field
     FluidQuantity<T, d> *_d;
     // Velocity Field
     FluidQuantity<T, d> *_v[d];
 
     FluidSimulator_Grid<T, d> *grid;
-
-    int size;
 
     int m;
     int n;
@@ -36,21 +38,21 @@ class FluidSolver
 
     void calculateRHS()
     {
-        memset(_rhs, 0, size * sizeof(T));
+        memset(_rhs, 0, m * n * sizeof(T));
         for (int iy = 0; iy < n; iy++)
         {
             for (int ix = 0; ix < m; ix++)
             {
                 int idx = iy * m + ix;
-                T_INDEX index = offset2index(idx);
+                // T_INDEX index = offset2index(idx);
 
-                for(int axis = 0; axis < d; axis++)
-                {
-                    _rhs[idx] -= (_v[axis]->at(grid->Next_Cell(axis, index)) - _v[axis]->at(index)) / hx;
-                }
+                // for(int axis = 0; axis < d; axis++)
+                // {
+                //     _rhs[idx] -= (_v[axis]->at(index) - _v[axis]->at(grid->Next_Cell(axis, index))) / hx;
+                // }
 
-                // _rhs[idx] -= (_v[0]->at(ix + 1, iy) - _v[0]->at(ix, iy)) / hx;
-                // _rhs[idx] -= (_v[1]->at(ix, iy + 1) - _v[1]->at(ix, iy)) / hx;
+                _rhs[idx] -= (_v[0]->at(ix + 1, iy) - _v[0]->at(ix, iy)) / hx;
+                _rhs[idx] -= (_v[1]->at(ix, iy + 1) - _v[1]->at(ix, iy)) / hx;
             }
         }
     }
@@ -61,7 +63,7 @@ class FluidSolver
     void calculateA(T timestep)
     {
         T scale = timestep / rho / hx / hx;
-        memset(_Adiag, 0, size * sizeof(T));
+        memset(_Adiag, 0, m * n * sizeof(T));
 
         for (int iy = 0; iy < n; iy++)
         {
@@ -97,7 +99,7 @@ class FluidSolver
     {
         // Trying to solve M * z = r
         // Option 1: Set z = r ====> M = I (Do nothing)
-        memcpy(dst, src, size * sizeof(T));
+        memcpy(dst, src, m * n * sizeof(T));
 
         // Option 2: M ~ A^T
         // MIC / IC / integrade
@@ -107,7 +109,7 @@ class FluidSolver
     T InnerProduct(T *a, T *b)
     {
         T result = 0.0;
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < m * n; i++)
             result += a[i] * b[i];
         return result;
     }
@@ -153,7 +155,7 @@ class FluidSolver
     // dst = x + y * k
     void saxpy(T *_dst, T *_x, T *_y, T k)
     {
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < m * n; i++)
             _dst[i] = _x[i] + _y[i] * k;
     }
 
@@ -162,7 +164,7 @@ class FluidSolver
     T ConvergenceNorm(T *_x)
     {
         T maxNorm = __DBL_MIN__;
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < m * n; i++)
         {
             maxNorm = std::max(maxNorm, fabs(_x[i]));
             // maxNorm = max(fabs(_x[i]), maxNorm);
@@ -230,12 +232,12 @@ class FluidSolver
     void project_CG(int limit, bool output = true)
     {
         // Set initial guess p = 0 and r = d(the RHS)
-        memset(_p, 0, size * sizeof(T));
+        memset(_p, 0, m * n * sizeof(T));
         // Set auxiliary vector z = applyPreconditioner(r)
         applyPreconditioner(_z, _rhs);
 
         // and search vector s = z;     dst, src, size
-        memcpy(_s, _z, size * sizeof(T));
+        memcpy(_s, _z, m * n * sizeof(T));
 
         T sigma = InnerProduct(_z, _rhs);
         // printf("sigma = %f\n", sigma);
@@ -300,17 +302,19 @@ class FluidSolver
     void applyPressure(T timestep)
     {
         T scale = timestep / rho / hx;
-
-        for(int idx = 0; idx < size; idx++)
+        for (int iy = 0; iy < n; iy++)
         {
-            T_INDEX index = offset2index(idx);
-            
-            for(int axis = 0; axis < d; axis++)
+            for (int ix = 0; ix < m; ix++)
             {
-                _v[axis]->at(index) -= _p[idx] * scale;
-                _v[axis]->at(grid->Next_Cell(axis, index)) += _p[idx] * scale;
+                int idx = iy * m + ix;
+
+                _v[0]->at(ix, iy) -= _p[idx] * scale;
+                _v[0]->at(ix + 1, iy) += _p[idx] * scale;
+                _v[1]->at(ix, iy) -= _p[idx] * scale;
+                _v[1]->at(ix, iy + 1) += _p[idx] * scale;
             }
         }
+
         setBoundaryCondition();
     }
 
@@ -331,21 +335,20 @@ class FluidSolver
         this->n = grid.counts[1];
 
         this->hx = grid.hx;
-        this->size = grid.counts.Product();
 
         _d = new FluidQuantity<T, d>(grid, -1);
 
         for (int axis = 0; axis < d; axis++)
             _v[axis] = new FluidQuantity<T, d>(grid, axis);
 
-        _rhs = new T[size];
-        _p = new T[size];
-        _z = new T[size];
-        _s = new T[size];
-        _Adiag = new T[size];
-        _Aplusi = new T[size];
-        _Aplusj = new T[size];
-        _precon = new T[size];
+        _rhs = new T[m * n];
+        _p = new T[m * n];
+        _z = new T[m * n];
+        _s = new T[m * n];
+        _Adiag = new T[m * n];
+        _Aplusi = new T[m * n];
+        _Aplusj = new T[m * n];
+        _precon = new T[m * n];
     }
 
     ~FluidSolver()
@@ -386,13 +389,13 @@ class FluidSolver
 
     void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, T value)
     {
+
         for (int x = std::max(ix0, 0); x < std::min(ix1, m); x++)
             for (int y = std::max(iy0, 0); y < std::min(iy1, n); y++)
             {
                 int idx = y * m + x;
                 T_INDEX index = offset2index(idx);
                 std::cout << "index = " << index << std::endl;
-
                 if (axis == -1)
                     _d->addInflow(index, value);
                 else
@@ -402,20 +405,18 @@ class FluidSolver
             }
     }
 
-    // ?????? Why Not Work ???
     void addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, int axis, T value)
     {
-        T_INDEX index;
+        T_INDEX currIndex;
         for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
         {
-            index = T_INDEX() + iterator.Index();
-            std::cout << "index = " << index << std::endl;
-
+            currIndex = T_INDEX() + iterator.Index();
+            std::cout << "index = " << currIndex << std::endl;
             if (axis == -1)
-                _d->addInflow(index, value);
+                _d->addInflow(currIndex, value);
             else
             {
-                _v[axis]->addInflow(index, value);
+                _v[axis]->addInflow(currIndex, value);
             }
         }
     }
@@ -434,7 +435,7 @@ class FluidSolver
     {
         // Projection
         // calculateRHS();
-        memset(_rhs, 0, size * sizeof(T));
+        memset(_rhs, 0, m * n * sizeof(T));
         _rhs[7740] = 1;
         // calculateA(timestep);
         // calculatePreconditioner();
