@@ -199,7 +199,7 @@ class FluidSolver
             {
                 int idx = y * grid->counts[0] + x;
                 T_INDEX index = offset2index(idx);
-                std::cout << "index = " << index << std::endl;
+                // std::cout << "index = " << index << std::endl;
 
                 if (axis == -1)
                     _d->addInflow(index, value);
@@ -217,7 +217,7 @@ class FluidSolver
         for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
         {
             index = T_INDEX() + iterator.Index();
-            std::cout << "index = " << index << std::endl;
+            // std::cout << "index = " << index << std::endl;
 
             if (axis == -1)
                 _d->addInflow(index, value);

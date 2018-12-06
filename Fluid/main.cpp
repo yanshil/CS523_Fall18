@@ -94,7 +94,7 @@ void timer(int)
 {
     /* update animation */
     glutPostRedisplay();
-    glutTimerFunc(1000.0 / 20, timer, 0);
+    glutTimerFunc(1000.0 / 60, timer, 0);
 }
 
 // -------------------------------------------------
