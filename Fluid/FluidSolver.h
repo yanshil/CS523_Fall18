@@ -97,25 +97,10 @@ class FluidSolver
     }
 
     void setBoundaryCondition()
-    {
-        // TODO
-        int m = grid->counts[0];
-        int n = grid->counts[1];
-        if (d == 3)
+    {   
+        for(int axis = 0; axis < d; axis++)
         {
-            int k = grid->counts[2];
-        }
-
-        for (int x = 1; x <= m; x++)
-        {
-            _v[1]->at(T_INDEX{x, 1}) = 0.0;
-            _v[1]->at(T_INDEX{x, n + 1}) = 0.0;
-        }
-
-        for (int y = 1; y <= n; y++)
-        {
-            _v[0]->at(T_INDEX{m + 1, y}) = 0.0;
-            _v[0]->at(T_INDEX{1, y}) = 0.0;
+            _v[axis]->setBoundaryValue();
         }
     }
 
@@ -169,6 +154,14 @@ class FluidSolver
 
         delete[] _rhs;
         delete[] _p;
+    }
+
+    void initialize()
+    {
+        for(int axis = 0; axis < d; axis++)
+        {
+            _v[axis]->calculateBCFlag();
+        }
     }
 
     void update(T timestep)

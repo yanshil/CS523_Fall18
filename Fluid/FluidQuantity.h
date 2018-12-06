@@ -24,6 +24,9 @@ class FluidQuantity
     // Grid Cell size
     T hx;
 
+    // BC Flag
+    int *_BCFlag;
+
     // 1D Linear Interpolate between a and b in (0,1)
     T linp(T a, T b, T delta) const
     {
@@ -48,6 +51,7 @@ class FluidQuantity
 
         _Phi = new T[size];
         _Phi_new = new T[size];
+        _BCFlag = new int[size];
 
         memset(_Phi, 0, size * sizeof(T));
     }
@@ -56,6 +60,7 @@ class FluidQuantity
     {
         delete[] _Phi;
         delete[] _Phi_new;
+        delete[] _BCFlag;
     }
 
     void flip()
@@ -76,6 +81,39 @@ class FluidQuantity
     T &at(const T_INDEX &index)
     {
         return _Phi[index2offset(index)];
+    }
+
+    void calculateBCFlag()
+    {
+        // 0 indicate Inertia, 1 is exteria
+        memset(_BCFlag, 0, size * sizeof(int));
+
+        if (axis != -1)
+        {
+            for (int idx = 0; idx < size; idx++)
+            {
+                T_INDEX index = offset2index(idx);
+
+                if ((index(axis) == 1) | (index(axis) == simulation_counts(axis)))
+                {
+                    _BCFlag[idx] = 1;
+                }
+            }
+        }
+    }
+
+    void setBoundaryValue()
+    {
+
+        for (int idx = 0; idx < size; idx++)
+        {
+            T_INDEX index = offset2index(idx);
+
+            if (_BCFlag[idx] == 1)
+            {
+                at(index) = 0.0;
+            }
+        }
     }
 
     // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
@@ -136,7 +174,6 @@ class FluidQuantity
         // if(ix >= 0 & ix < m & iy >=0 & iy < n)
         if (fabs(at(index)) < fabs(value))
             at(index) = value;
-
     }
 
     int index2offset(const T_INDEX &index) const

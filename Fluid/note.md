@@ -26,7 +26,7 @@ The `y <- (os - x) / m` I made m as n.....
 
 4. CalculateRHS order??? Nopes.... it was correct
 
-5. 
+5. BCFlag!!
 
 ```
         for (int x = 1; x <= m; x++)
@@ -40,6 +40,18 @@ The `y <- (os - x) / m` I made m as n.....
             _v[0]->at(T_INDEX{m + 1, y}) = 0.0;
             _v[0]->at(T_INDEX{1, y}) = 0.0;
         }
+```
+
+Wow ! Solution!
+
+```
+    void setBoundaryCondition()
+    {   
+        for(int axis = 0; axis < d; axis++)
+        {
+            _v[axis]->setBoundaryValue();
+        }
+    }
 ```
 
 

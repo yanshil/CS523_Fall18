@@ -102,6 +102,8 @@ void timer(int)
 int main(int argc, char **argv)
 {
 
+    solver->initialize();
+
     glutInit(&argc, argv);                 // Initialize GLUT
     glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title
     glutInitWindowSize(400, 400);          // Set the window's initial width & height
