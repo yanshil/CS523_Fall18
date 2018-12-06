@@ -90,7 +90,7 @@ class FluidQuantity
         return _Phi[x + y * m];
     }
 
-    T at(T_INDEX &index) const
+    T at(const T_INDEX &index) const
     {
         return _Phi[index2offset(index)];
     }
@@ -100,83 +100,61 @@ class FluidQuantity
         return _Phi[x + y * m];
     }
 
-    T &at(T_INDEX &index)
+    T &at(const T_INDEX &index)
     {
         return _Phi[index2offset(index)];
     }
 
     // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
-    T linp(T x, T y) const
+    T linp(TV location)
     {
         // Clamp Coordinates
         // Extra 0.0001 for not Clamp to m+1 when x is exactly a int.
-        x = std::max(x - ox, 0.0);
-        x = std::min(x, m - 1.0001);
-        y = std::max(y - oy, 0.0);
-        y = std::min(y, n - 1.0001);
+        location -= faceOffset;
 
-        // Get Index
-        int ix = (int)x;
-        int iy = (int)y;
-        // Get the offset between (0,1)
-        x -= ix;
-        y -= iy;
+        // TODO
+        for (int axis = 0; axis < d; axis++)
+        {
+            location(axis) = std::max(location(axis), 0.0);
+            location(axis) = std::min(location(axis), simulation_counts(axis) - 1.0001);
+        }
 
-        T x0 = linp(at(ix, iy), at(ix + 1, iy), x);
-        T x1 = linp(at(ix, iy + 1), at(ix + 1, iy + 1), x);
-        T re = linp(x0, x1, y);
+        T_INDEX ixyz(0);
 
-        // if (oy < 0.0001) {
-        //     printf("x0 = %0.3f, x1 = %0.3f\n", x0, x1);
-        // printf("at(%d, %d) = %f, Next_0: at(%d, %d) = %f\n", ix, iy, at(ix, iy),ix+1, iy, at(ix+1, iy));
-        // }
+        for (int axis = 0; axis < d; axis++)
+        {
+            ixyz(axis) = (int)location(axis);
+        }
+
+        TV offset = location - (TV)ixyz;
+        T_INDEX c000 = ixyz + T_INDEX(1);
+
+        T x0 = linp(at(c000), at(grid->Next_Cell(0, c000)), offset[0]);
+        T x1 = linp(at(grid->Next_Cell(1, c000)), at(grid->Next_Cell(1, grid->Next_Cell(0, c000))), offset[0]);
+        T re = linp(x0, x1, offset[1]);
 
         return re;
+
+        // TODO: 3D
     }
 
     void advect(T timestep, FluidQuantity *_v[d])
     {
         // Reduce Spatial locality
 
-        // for (int idx = 0; idx < size; idx++)
-        // {
-        //     T_INDEX index = offset2index(idx);
-        //     // TV location = (axis == -1) ? grid->Center(index) : grid->Face(axis, index);
-        //     // TV location = (TV)index + faceOffset - TV(1);
-        //     TV location = TV{index(0)-1, index(1)-1} + faceOffset;
-
-        //     for (int axis = 0; axis < d; axis++)
-        //     {
-        //         T vtmp = _v[axis]->linp(location(0), location(1)) / hx;
-        //         // Traceback
-        //         location[axis] -= vtmp * timestep;
-        //     }
-
-        //     _Phi_new[idx] = linp(location(0), location(1));
-        // }
-
-        for (int iy = 0; iy < n; iy++)
+        for (int idx = 0; idx < size; idx++)
         {
-            for (int ix = 0; ix < m; ix++)
+            T_INDEX index = offset2index(idx);
+            TV location = (TV)index - TV(1) + faceOffset;
+
+            for (int axis = 0; axis < d; axis++)
             {
-                int idx = iy * m + ix;
-                T_INDEX index = offset2index(idx);
-                // printf("(%d, %d) = idx = %d, 2index = (%d, %d)\n", ix, iy, idx, index(0), index(1));
-
-                // TV location = TV{ix, iy} + faceOffset;
-                TV location = (TV)index - TV(1) + faceOffset;
-
-                // Compute velocity
-
-                for (int axis = 0; axis < d; axis++)
-                {
-                    T vtmp = _v[axis]->linp(location(0), location(1)) / hx;
-                    // Traceback
-                    location[axis] -= vtmp * timestep;
-                }
-
-                _Phi_new[idx] = linp(location(0), location(1));
+                T vtmp = _v[axis]->linp(location) / hx;
+                // Traceback
+                location[axis] -= vtmp * timestep;
             }
+
+            _Phi_new[idx] = linp(location);
         }
     }
 
@@ -185,8 +163,25 @@ class FluidQuantity
         // if(ix >= 0 & ix < m & iy >=0 & iy < n)
         if (fabs(_Phi[iy * m + ix]) < fabs(value))
         {
+            printf("Add Inflow in (%d, %d)\n", ix, iy);
             _Phi[iy * m + ix] = value;
-            //printf("Add Inflow at (%d, %d)\n", ix, iy);
+        }
+    }
+
+    void addInflow(const T_INDEX &index, T value)
+    {
+        // if(ix >= 0 & ix < m & iy >=0 & iy < n)
+        // if (fabs(at(index)) < fabs(value))
+        // {
+        //     printf("Add Inflow in (%d, %d)\n", index(0), index(1));
+        //     at(index) = value;
+        // }
+        int ix = index(0)-1;
+        int iy = index(1)-1;
+        if (fabs(_Phi[iy * m + ix]) < fabs(value))
+        {
+            printf("Add Inflow in (%d, %d)\n", ix, iy);
+            _Phi[iy * m + ix] = value;
         }
     }
 

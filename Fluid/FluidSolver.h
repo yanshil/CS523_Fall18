@@ -1,4 +1,5 @@
 #include "FluidQuantity.h"
+#include <nova/Tools/Utilities/Range_Iterator.h>
 
 namespace Nova
 {
@@ -354,7 +355,7 @@ class FluidSolver
     {
         delete _d;
         for (int axis = 0; axis < d; axis++)
-           delete  _v[axis];
+            delete _v[axis];
 
         delete[] _rhs;
         delete[] _p;
@@ -395,11 +396,24 @@ class FluidSolver
                 //printf("idx = %d\n", idx);
                 if (axis == -1)
                     _d->addInflow(x, y, value);
-                if (axis == 0)
-                    _v[0]->addInflow(x, y, value);
-                if (axis == 1)
-                    _v[1]->addInflow(x, y, value);
+                else
+                {
+                    _v[axis]->addInflow(x, y, value);
+                }
             }
+    }
+
+    void addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, int axis, T value)
+    {
+        T_INDEX currIndex;
+        for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
+        {
+            currIndex = T_INDEX() + iterator.Index();
+            if(axis == -1)
+                _d->addInflow(currIndex, value);
+            else
+                _v[axis]->addInflow(currIndex, value);
+        }
     }
 
     /* Convert fluid density to RGB color scaled in 0 - 1 */

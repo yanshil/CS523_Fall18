@@ -19,3 +19,7 @@ usage
 ```
 advect(T t, FluidQuantity _v);
 ```
+
+3. OMG my offset2 index has bug!!!
+
+The `y <- (os - x) / m` I made m as n.....

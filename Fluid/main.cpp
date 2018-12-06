@@ -76,10 +76,10 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    // solver->addInflow(T_INDEX{57, 1}, T_INDEX{64, 7}, -1, 1);
-    // solver->addInflow(T_INDEX{57, 1}, T_INDEX{64, 7}, 1, 1);
-    solver->addInflow(57, 1, 64, 7, -1, 1);
-    solver->addInflow(57, 1, 64, 7, 1, 1);
+    // solver->addInflow(57, 1, 64, 7, -1, 1);
+    // solver->addInflow(57, 1, 64, 7, 1, 1);
+    solver->addInflow(T_INDEX{58,2}, T_INDEX{65,8}, -1, 1);
+    solver->addInflow(T_INDEX{58,2}, T_INDEX{65,8}, -1, 1);
     solver->update(timestep);
 }
 
