@@ -138,15 +138,38 @@ class FluidQuantity
         }
 
         TV offset = location - (TV)ixyz;
-        T_INDEX c000 = ixyz + T_INDEX(1);
 
-        T x0 = linp(at(c000), at(grid->Next_Cell(0, c000)), offset[0]);
-        T x1 = linp(at(grid->Next_Cell(1, c000)), at(grid->Next_Cell(1, grid->Next_Cell(0, c000))), offset[0]);
-        T re = linp(x0, x1, offset[1]);
+        T_INDEX c000, c100, c010, c110;
+        c000 = ixyz + T_INDEX(1);
+        c100 = grid->Next_Cell(0, c000);
+        c010 = grid->Next_Cell(1, c000);
+        c110 = grid->Next_Cell(0, c010);
 
-        return re;
+        T x00 = linp(at(c000), at(c100), offset[0]);
+        T x10 = linp(at(c010), at(c110), offset[0]);
+        T y0 = linp(x00, x10, offset[1]);
 
-        // TODO: 3D
+        if (d == 2)
+        {
+            return y0;
+        }
+
+        // ----------------- If d = 3----------------------
+
+        T_INDEX c001, c101, c011, c111;
+
+        c001 = grid->Next_Cell(2, c000);
+        c101 = grid->Next_Cell(2, c100);
+        c011 = grid->Next_Cell(2, c010);
+        c111 = grid->Next_Cell(2, c110);
+
+        T x01 = linp(at(c001), at(c101), offset[0]);
+        T x11 = linp(at(c011), at(c111), offset[0]);
+        T y1 = linp(x01, x11, offset[1]);
+
+        T z = linp(y0, y1, offset[2]);
+
+        return z;
     }
 
     void advect(T timestep, FluidQuantity *_v[d])
