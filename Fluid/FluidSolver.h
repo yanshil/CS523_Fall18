@@ -34,6 +34,8 @@ class FluidSolver
     }
 
   public:
+    bool output;
+
     FluidSolver(FluidSimulator_Grid<T, d> &grid, T rho) : grid(&grid), rho(rho)
     {
         this->hx = grid.hx;
@@ -46,6 +48,7 @@ class FluidSolver
 
         _rhs = new T[size];
         _p = new T[size];
+        this->output = false;
     }
 
     ~FluidSolver()
@@ -80,7 +83,7 @@ class FluidSolver
         }
     }
 
-    void project_GS(int limit, T timestep, bool output = true)
+    void project_GS(int limit, T timestep)
     {
         T scale = timestep / rho / hx / hx;
 
@@ -173,52 +176,31 @@ class FluidSolver
         // Projection
         calculateRHS();
 
-        project_GS(1000, timestep, false);
+        project_GS(1000, timestep);
         applyPressure(timestep);
 
         //Advection
         _d->advect(timestep, _v);
-        
-        for(int axis = 0; axis < d; axis++)
+
+        for (int axis = 0; axis < d; axis++)
             _v[axis]->advect(timestep, _v);
-        
 
         // Flip
         _d->flip();
 
-        for(int axis = 0; axis < d; axis++)
+        for (int axis = 0; axis < d; axis++)
             _v[axis]->flip();
-        
-
     }
 
-    void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, T value)
-    {
-        for (int x = std::max(ix0, 0); x < std::min(ix1, grid->counts[0]); x++)
-            for (int y = std::max(iy0, 0); y < std::min(iy1, grid->counts[1]); y++)
-            {
-                int idx = y * grid->counts[0] + x;
-                T_INDEX index = offset2index(idx);
-                // std::cout << "index = " << index << std::endl;
-
-                if (axis == -1)
-                    _d->addInflow(index, value);
-                else
-                {
-                    _v[axis]->addInflow(index, value);
-                }
-            }
-    }
-
-    // ?????? Why Not Work ???
+    // Low Temporal Locality.....
     void addInflow(const T_INDEX &min_corner, const T_INDEX &max_corner, int axis, T value)
     {
         T_INDEX index;
         for (Range_Iterator<d> iterator(Range<int, d>(min_corner, max_corner)); iterator.Valid(); iterator.Next())
         {
             index = T_INDEX() + iterator.Index();
-            // std::cout << "index = " << index << std::endl;
 
+            // std::cout << "axis = " << axis << ", index = " << index << std::endl;
             if (axis == -1)
                 _d->addInflow(index, value);
             else

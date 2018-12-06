@@ -29,7 +29,8 @@ int main(int argc, char const *argv[])
     T* ptr_rhs = solver->rhs();
     memset(ptr_rhs, 0, size * sizeof(T));
     solver->rhs()[59 * 128 * 128 + 59 * 128 + 59] = 100;
-    solver->project_GS(1000, timestep, false);
+    solver->output = false;
+    solver->project_GS(1000, timestep);
     solver->applyPressure(timestep);
     
     // Print Pressure Solution

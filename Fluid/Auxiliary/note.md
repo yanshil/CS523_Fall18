@@ -49,23 +49,9 @@ Wow ! Solution!
     {   
         for(int axis = 0; axis < d; axis++)
         {
-            _v[axis]->setBoundaryValue();
+            _v[axis]->setBdirectionoundaryValue();
         }
     }
 ```
 
-
-
-
-
-
-        for(int idx = 0; i < size; idx++)
-        {
-            T_INDEX index = offset2index(index);
-            
-            for(int axis = 0; axis < d; axis++)
-            {
-                /* code */
-            }
-            
-        }
+6. Range Iterator Low temporal locality...

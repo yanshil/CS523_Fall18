@@ -76,10 +76,8 @@ void display()
     glFlush(); // Render now
 
     //-------------------------------------
-    solver->addInflow(57, 1, 64, 7, -1, 1);
-    solver->addInflow(57, 1, 64, 7, 1, 1);
-    // solver->addInflow(T_INDEX{58,2}, T_INDEX{64,7}, -1, 1);
-    // solver->addInflow(T_INDEX{58,2}, T_INDEX{64,7}, -1, 1);
+    solver->addInflow(T_INDEX{58,2}, T_INDEX{64,7}, -1, 1);
+    solver->addInflow(T_INDEX{58,2}, T_INDEX{64,7}, 1, 1);
     solver->update(timestep);
 }
 
@@ -101,7 +99,7 @@ void timer(int)
 
 int main(int argc, char **argv)
 {
-
+    solver->output = true;
     solver->initialize();
 
     glutInit(&argc, argv);                 // Initialize GLUT
