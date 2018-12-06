@@ -41,48 +41,43 @@ class FluidSolver
         T scale = timestep / rho / hx / hx;
 
         T maxDelta;
-
-        int m = grid->counts[0];
-        int n = grid->counts[1];
-
         for (int iteration = 0; iteration < limit; iteration++)
         {
             maxDelta = __DBL_MIN__;
-            for (int iy = 0; iy < n; iy++)
+
+            for (int idx = 0; idx < size; idx++)
             {
-                for (int ix = 0; ix < m; ix++)
+                T_INDEX index = offset2index(idx);
+                T Aii = 0, sum = 0;
+
+                for (int axis = 0; axis < d; axis++)
                 {
-                    int idx = iy * m + ix;
-                    T Aii = 0, sum = 0;
+                    // Previous u
+                    T_INDEX p_index = grid->Previous_Cell(axis, index);
 
-                    if (ix > 0)
+                    if (grid->Inside_Domain(p_index))
                     {
                         Aii += scale;
-                        sum -= scale * _p[idx - 1]; // Previous u
-                    }
-                    if (iy > 0)
-                    {
-                        Aii += scale;
-                        sum -= scale * _p[idx - m]; // Previous v
-                    }
-                    if (ix < m - 1)
-                    {
-                        Aii += scale;
-                        sum -= scale * _p[idx + 1]; // Next u
-                    }
-                    if (iy < n - 1)
-                    {
-                        Aii += scale;
-                        sum -= scale * _p[idx + m]; // Next v
+                        sum -= scale * _p[index2offset(p_index)];
                     }
 
-                    T newP = (_rhs[idx] - sum) / Aii;
+                    // Next u
+                    T_INDEX n_index = grid->Next_Cell(axis, index);
 
-                    maxDelta = std::max(maxDelta, fabs(_p[idx] - newP));
-
-                    _p[idx] = newP;
+                    if (grid->Inside_Domain(n_index))
+                    {
+                        Aii += scale;
+                        sum -= scale * _p[index2offset(n_index)];
+                    }
                 }
+
+                T newP = (_rhs[idx] - sum) / Aii;
+
+                maxDelta = std::max(maxDelta, fabs(_p[idx] - newP));
+
+                _p[idx] = newP;
             }
+
             if (maxDelta < 1e-5)
             {
                 if (output)
@@ -97,8 +92,8 @@ class FluidSolver
     }
 
     void setBoundaryCondition()
-    {   
-        for(int axis = 0; axis < d; axis++)
+    {
+        for (int axis = 0; axis < d; axis++)
         {
             _v[axis]->setBoundaryValue();
         }
@@ -121,12 +116,12 @@ class FluidSolver
         setBoundaryCondition();
     }
 
-    int index2offset(const T_INDEX &index) const
+    int index2offset(const T_INDEX &index)
     {
         return grid->index2offset(index, grid->counts);
     }
 
-    T_INDEX offset2index(const int os) const
+    T_INDEX offset2index(const int os)
     {
         return grid->offset2index(os, grid->counts);
     }
@@ -158,7 +153,7 @@ class FluidSolver
 
     void initialize()
     {
-        for(int axis = 0; axis < d; axis++)
+        for (int axis = 0; axis < d; axis++)
         {
             _v[axis]->calculateBCFlag();
         }

@@ -51,7 +51,7 @@ class FluidSimulator_Grid : public Grid<T, d>
         return p_index;
     }
 
-    int index2offset(const T_INDEX &index, T_INDEX dim) const
+    int index2offset(const T_INDEX &index, T_INDEX dim)
     {
         // Becuase index in the grid start from (1,1)...
         T_INDEX tmp_index = index;
@@ -63,7 +63,7 @@ class FluidSimulator_Grid : public Grid<T, d>
         return os;
     }
 
-    T_INDEX offset2index(const int os, T_INDEX dim) const
+    T_INDEX offset2index(const int os, T_INDEX dim)
     {
         // 3D: os = z * m * n + y * m + x
         // 2D: os = y * m + x
