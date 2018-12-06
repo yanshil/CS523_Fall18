@@ -98,16 +98,24 @@ class FluidSolver
 
     void setBoundaryCondition()
     {
-        for (int x = 0; x < grid->counts[0]; x++)
+        // TODO
+        int m = grid->counts[0];
+        int n = grid->counts[1];
+        if (d == 3)
         {
-            _v[1]->at(x, 0) = 0.0;
-            _v[1]->at(x, grid->counts[1]) = 0.0;
+            int k = grid->counts[2];
         }
 
-        for (int y = 0; y < grid->counts[1]; y++)
+        for (int x = 1; x <= m; x++)
         {
-            _v[0]->at(grid->counts[0], y) = 0.0;
-            _v[0]->at(0, y) = 0.0;
+            _v[1]->at(T_INDEX{x, 1}) = 0.0;
+            _v[1]->at(T_INDEX{x, n + 1}) = 0.0;
+        }
+
+        for (int y = 1; y <= n; y++)
+        {
+            _v[0]->at(T_INDEX{m + 1, y}) = 0.0;
+            _v[0]->at(T_INDEX{1, y}) = 0.0;
         }
     }
 

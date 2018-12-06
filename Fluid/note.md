@@ -24,7 +24,23 @@ advect(T t, FluidQuantity _v);
 
 The `y <- (os - x) / m` I made m as n.....
 
-4. CalculateRHS order???
+4. CalculateRHS order??? Nopes.... it was correct
+
+5. 
+
+```
+        for (int x = 1; x <= m; x++)
+        {
+            _v[1]->at(T_INDEX{x, 1}) = 0.0;
+            _v[1]->at(T_INDEX{x, n + 1}) = 0.0;
+        }
+
+        for (int y = 1; y <= n; y++)
+        {
+            _v[0]->at(T_INDEX{m + 1, y}) = 0.0;
+            _v[0]->at(T_INDEX{1, y}) = 0.0;
+        }
+```
 
 
 

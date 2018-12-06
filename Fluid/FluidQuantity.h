@@ -68,19 +68,9 @@ class FluidQuantity
         return _Phi;
     }
 
-    T at(int x, int y) const
-    {
-        return _Phi[x + y * simulation_counts[0]];
-    }
-
     T at(const T_INDEX &index) const
     {
         return _Phi[index2offset(index)];
-    }
-
-    T &at(int x, int y)
-    {
-        return _Phi[x + y * simulation_counts[0]];
     }
 
     T &at(const T_INDEX &index)
