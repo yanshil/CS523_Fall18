@@ -1,14 +1,10 @@
 add_executable(fluidsimulator
     main.cpp
-    #FluidQuantity.cpp
-    #FluidSolver.cpp
 )
 
-#add_executable(unitTest-Nova
-#    unitTest.cpp
-#    FluidQuantity.cpp
-#    FluidSolver.cpp
-#)
+add_executable(unitTest-Nova
+    unitTest.cpp
+)
 
 target_link_libraries(fluidsimulator
     PRIVATE
@@ -16,11 +12,11 @@ target_link_libraries(fluidsimulator
     nova::geometry
 )
 
-#target_link_libraries(unitTest-Nova
-#    PRIVATE
-#    nova::tools
-#    nova::geometry
-#)
+target_link_libraries(unitTest-Nova
+    PRIVATE
+    nova::tools
+    nova::geometry
+)
 
 
 file(RELATIVE_PATH REL ${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})

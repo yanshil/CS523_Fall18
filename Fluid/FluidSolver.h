@@ -58,9 +58,14 @@ class FluidSolver
         delete[] _p;
     }
 
-    const T *rhs() const
+    T *rhs()
     {
         return _rhs;
+    }
+
+    T *p()
+    {
+        return _p;
     }
 
     void calculateRHS()
@@ -227,19 +232,6 @@ class FluidSolver
     T toRGB(const T_INDEX &index)
     {
         return std::max(std::min(1.0 - _d->at(index), 1.0), 0.0);
-    }
-
-    //===========================================================
-
-    // Projection output as a tent-like plot
-    void test_projection_tent(T timestep)
-    {
-        // Projection
-        // calculateRHS();
-        memset(_rhs, 0, size * sizeof(T));
-        _rhs[7740] = 1;
-        project_GS(1000, timestep, false);
-        applyPressure(timestep);
     }
 };
 } // namespace Nova
