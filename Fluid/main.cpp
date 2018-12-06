@@ -47,8 +47,8 @@ void drawGrid()
         {
             float yPos = -1.0 + y * quadSize;
 
-            // T_INDEX index{x + 1, y + 1};
-            GLfloat color = solver->toRGB(x, y);
+            T_INDEX index{x + 1, y + 1};
+            GLfloat color = solver->toRGB(index);
 
             glColor3f(color, color, color);
 

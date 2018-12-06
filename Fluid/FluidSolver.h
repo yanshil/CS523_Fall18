@@ -17,164 +17,33 @@ class FluidSolver
     FluidSimulator_Grid<T, d> *grid;
 
     int size;
-
-    int m;
-    int n;
-
     T hx;
     T rho;
 
     T *_rhs;
     T *_p;
-    T *_z;      /* Auxiliary vector */
-    T *_s;      /* Search vector */
-    T *_precon; /* Preconditioner */
-
-    T *_Adiag;  /* Matrix diagonal */
-    T *_Aplusi; /* Matrix off-diagonals */
-    T *_Aplusj;
 
     void calculateRHS()
     {
         memset(_rhs, 0, size * sizeof(T));
-        for (int iy = 0; iy < n; iy++)
+        for (int idx = 0; idx < size; idx++)
         {
-            for (int ix = 0; ix < m; ix++)
-            {
-                int idx = iy * m + ix;
-                T_INDEX index = offset2index(idx);
+            T_INDEX index = offset2index(idx);
 
-                for(int axis = 0; axis < d; axis++)
-                {
-                    _rhs[idx] -= (_v[axis]->at(grid->Next_Cell(axis, index)) - _v[axis]->at(index)) / hx;
-                }
-
-                // _rhs[idx] -= (_v[0]->at(ix + 1, iy) - _v[0]->at(ix, iy)) / hx;
-                // _rhs[idx] -= (_v[1]->at(ix, iy + 1) - _v[1]->at(ix, iy)) / hx;
-            }
+            for (int axis = 0; axis < d; axis++)
+                _rhs[idx] -= (_v[axis]->at(grid->Next_Cell(axis, index)) - _v[axis]->at(index)) / hx;
         }
     }
 
-    /* Builds the pressure matrix. Since the matrix is very sparse and
-     * symmetric, it allows for memory friendly storage.
-     */
-    void calculateA(T timestep)
-    {
-        T scale = timestep / rho / hx / hx;
-        memset(_Adiag, 0, size * sizeof(T));
-
-        for (int iy = 0; iy < n; iy++)
-        {
-            for (int ix = 0; ix < m; ix++)
-            {
-                int idx = iy * m + ix;
-                if (ix < m - 1) // if u.next.valid()
-                {
-                    _Adiag[idx] += scale;     // A.diag() + 1
-                    _Adiag[idx + 1] += scale; // A.nextU.diag() + 1
-                    _Aplusi[idx] = -scale;
-                }
-                else
-                {
-                    _Aplusi[idx] = 0;
-                }
-
-                if (iy < n - 1) //if v.next.valid()
-                {
-                    _Adiag[idx] += scale;
-                    _Adiag[idx + m] += scale;
-                    _Aplusj[idx] = -scale;
-                }
-                else
-                {
-                    _Aplusj[idx] = 0;
-                }
-            }
-        }
-    }
-
-    void applyPreconditioner(T *dst, T *src)
-    {
-        // Trying to solve M * z = r
-        // Option 1: Set z = r ====> M = I (Do nothing)
-        memcpy(dst, src, size * sizeof(T));
-
-        // Option 2: M ~ A^T
-        // MIC / IC / integrade
-    }
-
-    // x * y
-    T InnerProduct(T *a, T *b)
-    {
-        T result = 0.0;
-        for (int i = 0; i < size; i++)
-            result += a[i] * b[i];
-        return result;
-    }
-
-    // y <- A * x
-    // A is a sparse matrix! stored in _Adiag, _Aplusi, _Aplusj
-    // Also we only care about inertia area
-    // A_ij,ij related to Adiag(ij), Aplusi(ij), Aplusj(ij), Aplusi(previousi), Aplusj(previousj)
-    void Multiply(T *_dst, T *_src)
-    {
-        for (int iy = 0; iy < n; iy++)
-        {
-            for (int ix = 0; ix < m; ix++)
-            {
-                int idx = iy * m + ix;
-                T sum = _Adiag[idx] * _src[idx];
-
-                if (ix > 0)
-                { // if u.previous valid
-                    sum += _Aplusi[idx - 1] * _src[idx - 1];
-                }
-
-                if (iy > 0)
-                {
-                    sum += _Aplusj[idx - m] * _src[idx - m];
-                }
-
-                if (ix < m - 1)
-                {
-                    sum += _Aplusi[idx] * _src[idx + 1];
-                }
-
-                if (iy < n - 1)
-                {
-                    sum += _Aplusj[idx] * _src[idx + m];
-                }
-
-                _dst[idx] = sum;
-            }
-        }
-    }
-
-    // dst = x + y * k
-    void saxpy(T *_dst, T *_x, T *_y, T k)
-    {
-        for (int i = 0; i < size; i++)
-            _dst[i] = _x[i] + _y[i] * k;
-    }
-
-    // |x|_infinity
-    // In fact should also cares about !inertior case
-    T ConvergenceNorm(T *_x)
-    {
-        T maxNorm = __DBL_MIN__;
-        for (int i = 0; i < size; i++)
-        {
-            maxNorm = std::max(maxNorm, fabs(_x[i]));
-            // maxNorm = max(fabs(_x[i]), maxNorm);
-        }
-        return maxNorm;
-    }
-
+    // TODO : 3D
     void project_GS(int limit, T timestep, bool output = true)
     {
         T scale = timestep / rho / hx / hx;
 
         T maxDelta;
+
+        int m = grid->counts[0];
+        int n = grid->counts[1];
 
         for (int iteration = 0; iteration < limit; iteration++)
         {
@@ -227,72 +96,17 @@ class FluidSolver
             printf("Exceed Limit of %d, with Norm1 = %f\n", limit, maxDelta);
     }
 
-    void project_CG(int limit, bool output = true)
-    {
-        // Set initial guess p = 0 and r = d(the RHS)
-        memset(_p, 0, size * sizeof(T));
-        // Set auxiliary vector z = applyPreconditioner(r)
-        applyPreconditioner(_z, _rhs);
-
-        // and search vector s = z;     dst, src, size
-        memcpy(_s, _z, size * sizeof(T));
-
-        T sigma = InnerProduct(_z, _rhs);
-        // printf("sigma = %f\n", sigma);
-
-        T norm1 = ConvergenceNorm(_rhs);
-        if (norm1 < 1e-5)
-            return;
-
-        // Enter Iteration with limit
-        for (int iteration = 0; iteration < limit; iteration++)
-        {
-            // Set Auxiliary vector z : Multiply(z, s)
-            Multiply(_z, _s);
-
-            T alpha = sigma / InnerProduct(_z, _s);
-            // printf("alpha = %f\n", sigma);
-
-            // Update p and r
-            saxpy(_p, _p, _s, alpha);
-            saxpy(_rhs, _rhs, _z, -alpha);
-
-            // If with convergence-norm < tol, return
-            norm1 = ConvergenceNorm(_rhs);
-            if (norm1 < 1e-5)
-            {
-                if (output)
-                    printf("Converge when iteration = %d, with 1Norm = %f\n", iteration, norm1);
-                return;
-            }
-
-            // Set auxiliary vector z = applyPreconditioner(r)
-            applyPreconditioner(_z, _rhs);
-            // Sigma_new = dotproduct(z, r)
-            T sigma_new = InnerProduct(_z, _rhs);
-            // printf("sigma_new = %f\n", sigma_new);
-            T beta = sigma_new / sigma;
-            // Set search vector s = z + beta * s
-            // saxpy(_s, beta, _s, _z);
-
-            saxpy(_s, _z, _s, beta);
-            sigma = sigma_new;
-        }
-        if (output)
-            printf("The %d iteration Limit Exceeded with 1Norm = %f\n", limit, norm1);
-    }
-
     void setBoundaryCondition()
     {
-        for (int x = 0; x < m; x++)
+        for (int x = 0; x < grid->counts[0]; x++)
         {
             _v[1]->at(x, 0) = 0.0;
-            _v[1]->at(x, n) = 0.0;
+            _v[1]->at(x, grid->counts[1]) = 0.0;
         }
 
-        for (int y = 0; y < n; y++)
+        for (int y = 0; y < grid->counts[1]; y++)
         {
-            _v[0]->at(m, y) = 0.0;
+            _v[0]->at(grid->counts[0], y) = 0.0;
             _v[0]->at(0, y) = 0.0;
         }
     }
@@ -301,11 +115,11 @@ class FluidSolver
     {
         T scale = timestep / rho / hx;
 
-        for(int idx = 0; idx < size; idx++)
+        for (int idx = 0; idx < size; idx++)
         {
             T_INDEX index = offset2index(idx);
-            
-            for(int axis = 0; axis < d; axis++)
+
+            for (int axis = 0; axis < d; axis++)
             {
                 _v[axis]->at(index) -= _p[idx] * scale;
                 _v[axis]->at(grid->Next_Cell(axis, index)) += _p[idx] * scale;
@@ -327,9 +141,6 @@ class FluidSolver
   public:
     FluidSolver(FluidSimulator_Grid<T, d> &grid, T rho) : grid(&grid), rho(rho)
     {
-        this->m = grid.counts[0];
-        this->n = grid.counts[1];
-
         this->hx = grid.hx;
         this->size = grid.counts.Product();
 
@@ -340,12 +151,6 @@ class FluidSolver
 
         _rhs = new T[size];
         _p = new T[size];
-        _z = new T[size];
-        _s = new T[size];
-        _Adiag = new T[size];
-        _Aplusi = new T[size];
-        _Aplusj = new T[size];
-        _precon = new T[size];
     }
 
     ~FluidSolver()
@@ -356,20 +161,13 @@ class FluidSolver
 
         delete[] _rhs;
         delete[] _p;
-        delete[] _z;
-        delete[] _s;
-        delete[] _Adiag;
-        delete[] _Aplusi;
-        delete[] _Aplusj;
-        delete[] _precon;
     }
 
     void update(T timestep)
     {
         // Projection
         calculateRHS();
-        //calculateA(timestep);
-        //project_CG(1000);
+
         project_GS(1000, timestep, false);
         applyPressure(timestep);
 
@@ -386,10 +184,10 @@ class FluidSolver
 
     void addInflow(int ix0, int iy0, int ix1, int iy1, int axis, T value)
     {
-        for (int x = std::max(ix0, 0); x < std::min(ix1, m); x++)
-            for (int y = std::max(iy0, 0); y < std::min(iy1, n); y++)
+        for (int x = std::max(ix0, 0); x < std::min(ix1, grid->counts[0]); x++)
+            for (int y = std::max(iy0, 0); y < std::min(iy1, grid->counts[1]); y++)
             {
-                int idx = y * m + x;
+                int idx = y * grid->counts[0] + x;
                 T_INDEX index = offset2index(idx);
                 std::cout << "index = " << index << std::endl;
 
@@ -421,10 +219,9 @@ class FluidSolver
     }
 
     /* Convert fluid density to RGB color scaled in 0 - 1 */
-    T toRGB(int x, int y)
+    T toRGB(const T_INDEX &index)
     {
-        int idx = y * m + x;
-        return std::max(std::min(1.0 - _d->Phi()[idx], 1.0), 0.0);
+        return std::max(std::min(1.0 - _d->at(index), 1.0), 0.0);
     }
 
     //===========================================================
@@ -436,10 +233,7 @@ class FluidSolver
         // calculateRHS();
         memset(_rhs, 0, size * sizeof(T));
         _rhs[7740] = 1;
-        // calculateA(timestep);
-        // calculatePreconditioner();
         project_GS(1000, timestep, false);
-        // project_CG(1000, false);
         applyPressure(timestep);
     }
 };
