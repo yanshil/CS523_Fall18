@@ -22,6 +22,8 @@ T density = 1;
 
 int iterations = 0;
 
+// Range<T,d> range(TV(), TV(1));
+// FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), range);
 FluidSimulator_Grid<T, d> grid(T_INDEX(CELLCOUNTS), Range<T, d>::Unit_Box());
 FluidSolver<T, d> *solver = new FluidSolver<T,d>(grid, 1);
 // FluidSolver<T,d> *solver = new FluidSolver<T,d>(CELLCOUNTS, CELLCOUNTS, density);

@@ -17,6 +17,8 @@ class FluidQuantity
 
     FluidSimulator_Grid<T, d> *grid;
     T_INDEX simulation_counts;
+    Range<T,d> simulation_range;
+
     TV faceOffset;
     int size;
     // Face indicator
@@ -40,11 +42,13 @@ class FluidQuantity
         this->simulation_counts = T_INDEX(grid.counts);
         this->hx = grid.hx;
         this->faceOffset = TV(0.5);
+        this->simulation_range = grid.domain;
 
         if (axis != -1)
         {
             this->faceOffset(axis) = 0;
             this->simulation_counts(axis) += 1;
+            this->simulation_range.max_corner(axis) += grid.dX(axis);
         }
 
         this->size = simulation_counts.Product();
@@ -115,7 +119,7 @@ class FluidQuantity
             }
         }
     }
-
+//----------------------------------------------------------
     // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
     T linp(TV location)
     {
@@ -192,6 +196,82 @@ class FluidQuantity
         }
     }
 
+//----------------------------------------------------------
+    // // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
+    // T linp(TV location)
+    // {
+    //     // Clamp Coordinates
+    //     // Extra 0.0001 for not Clamp to m+1 when x is exactly a int.
+    //     location -= faceOffset * grid->dX;
+
+    //     location = simulation_range.Clamp(location);
+
+    //     T_INDEX c000, c100, c010, c110;
+
+    //     c000 = grid->Clamp_To_Cell(location);
+
+        
+    //     if (!grid->Inside_Domain(c000)) {
+    //         std::cout << "c000 = "<< c000 << std::endl;
+    //     }
+        
+
+    //     // TV location2 = (axis == -1)? grid->Center(c000):grid->Face(axis, c000);
+    //     TV location2 = grid->Node(c000);
+
+    //     TV offset = (location - location2) * grid->one_over_dX;
+        
+    //     c100 = grid->Next_Cell(0, c000);
+    //     c010 = grid->Next_Cell(1, c000);
+    //     c110 = grid->Next_Cell(0, c010);
+
+    //     T x00 = linp(at(c000), at(c100), offset[0]);
+    //     T x10 = linp(at(c010), at(c110), offset[0]);
+    //     T y0 = linp(x00, x10, offset[1]);
+
+    //     if (d == 2)
+    //     {
+    //         return y0;
+    //     }
+
+    //     // ----------------- If d = 3----------------------
+
+    //     T_INDEX c001, c101, c011, c111;
+
+    //     c001 = grid->Next_Cell(2, c000);
+    //     c101 = grid->Next_Cell(2, c100);
+    //     c011 = grid->Next_Cell(2, c010);
+    //     c111 = grid->Next_Cell(2, c110);
+
+    //     T x01 = linp(at(c001), at(c101), offset[0]);
+    //     T x11 = linp(at(c011), at(c111), offset[0]);
+    //     T y1 = linp(x01, x11, offset[1]);
+
+    //     T z = linp(y0, y1, offset[2]);
+
+    //     return z;
+    // }
+
+    // void advect(T timestep, FluidQuantity *_v[d])
+    // {
+    //     // Reduce Spatial locality
+
+    //     for (int idx = 0; idx < size; idx++)
+    //     {
+    //         T_INDEX index = offset2index(idx);
+    //         TV location = (axis == -1)? grid->Center(index):grid->Face(axis, index);
+
+    //         for (int axis = 0; axis < d; axis++)
+    //         {
+    //             T vtmp = _v[axis]->linp(location);
+    //             // Traceback
+    //             location[axis] -= vtmp * timestep;
+    //         }
+
+    //         _Phi_new[idx] = linp(location);
+    //     }
+    // }
+//----------------------------------------------------------
     void addInflow(const T_INDEX &index, T value)
     {
         // if(ix >= 0 & ix < m & iy >=0 & iy < n)
