@@ -17,7 +17,6 @@ class FluidQuantity
 
     FluidSimulator_Grid<T, d> *grid;
     T_INDEX simulation_counts;
-    Range<T, d> simulation_range;
 
     TV faceOffset;
     int size;
@@ -42,13 +41,11 @@ class FluidQuantity
         this->simulation_counts = T_INDEX(grid.counts);
         this->hx = grid.hx;
         this->faceOffset = TV(0.5);
-        this->simulation_range = grid.domain;
 
         if (axis != -1)
         {
             this->faceOffset(axis) = 0;
             this->simulation_counts(axis) += 1;
-            this->simulation_range.max_corner(axis) += grid.dX(axis);
         }
 
         this->size = simulation_counts.Product();
@@ -134,7 +131,13 @@ class FluidQuantity
             location(axis) = std::min(location(axis), simulation_counts(axis) - 1.0001);
         }
 
-        T_INDEX ixyz(0);
+        // for (int axis = 0; axis < d; axis++)
+        // {
+        //     location(axis) = std::max(location(axis), 1.0);
+        //     location(axis) = std::min(location(axis), (T)grid->counts(axis) - 0.0001);
+        // }
+
+        T_INDEX ixyz;
 
         for (int axis = 0; axis < d; axis++)
         {
@@ -145,6 +148,7 @@ class FluidQuantity
 
         T_INDEX c000, c100, c010, c110;
         c000 = ixyz + T_INDEX(1);
+        // c000 = ixyz;
         c100 = grid->Next_Cell(0, c000);
         c010 = grid->Next_Cell(1, c000);
         c110 = grid->Next_Cell(0, c010);
@@ -184,6 +188,7 @@ class FluidQuantity
         {
             T_INDEX index = offset2index(idx);
             TV location = (TV)index - TV(1) + faceOffset;
+            // TV location = (TV)index + faceOffset;
 
             for (int axis = 0; axis < d; axis++)
             {
