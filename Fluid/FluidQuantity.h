@@ -17,7 +17,7 @@ class FluidQuantity
 
     FluidSimulator_Grid<T, d> *grid;
     T_INDEX simulation_counts;
-    Range<T,d> simulation_range;
+    Range<T, d> simulation_range;
 
     TV faceOffset;
     int size;
@@ -119,7 +119,7 @@ class FluidQuantity
             }
         }
     }
-//----------------------------------------------------------
+    //-------------------Interpolate by Index ----------------------------
     // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
     T linp(TV location)
     {
@@ -196,31 +196,25 @@ class FluidQuantity
         }
     }
 
-//----------------------------------------------------------
-    // // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
+    //------------------------Interpolate by Location ------------------------
+    // Linear Interpolate on grid at index (x, y) (can be 0.5 if on face)
     // T linp(TV location)
     // {
     //     // Clamp Coordinates
     //     // Extra 0.0001 for not Clamp to m+1 when x is exactly a int.
     //     location -= faceOffset * grid->dX;
 
-    //     location = simulation_range.Clamp(location);
+    //     location = grid->domain.Clamp(location);
 
     //     T_INDEX c000, c100, c010, c110;
 
     //     c000 = grid->Clamp_To_Cell(location);
 
-        
-    //     if (!grid->Inside_Domain(c000)) {
-    //         std::cout << "c000 = "<< c000 << std::endl;
-    //     }
-        
-
     //     // TV location2 = (axis == -1)? grid->Center(c000):grid->Face(axis, c000);
     //     TV location2 = grid->Node(c000);
 
     //     TV offset = (location - location2) * grid->one_over_dX;
-        
+
     //     c100 = grid->Next_Cell(0, c000);
     //     c010 = grid->Next_Cell(1, c000);
     //     c110 = grid->Next_Cell(0, c010);
@@ -259,7 +253,7 @@ class FluidQuantity
     //     for (int idx = 0; idx < size; idx++)
     //     {
     //         T_INDEX index = offset2index(idx);
-    //         TV location = (axis == -1)? grid->Center(index):grid->Face(axis, index);
+    //         TV location = (axis == -1) ? grid->Center(index) : grid->Face(axis, index);
 
     //         for (int axis = 0; axis < d; axis++)
     //         {
@@ -271,7 +265,7 @@ class FluidQuantity
     //         _Phi_new[idx] = linp(location);
     //     }
     // }
-//----------------------------------------------------------
+    //----------------------------------------------------------
     void addInflow(const T_INDEX &index, T value)
     {
         // if(ix >= 0 & ix < m & iy >=0 & iy < n)

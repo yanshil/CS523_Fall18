@@ -101,13 +101,13 @@ void timer(int)
 
 int main(int argc, char **argv)
 {
-    solver->output = true;
+    solver->output = false;
     solver->initialize();
 
     glutInit(&argc, argv);                 // Initialize GLUT
-    glutCreateWindow("OpenGL Setup Test"); // Create a window with the given title
+    glutCreateWindow("Fluid Test"); // Create a window with the given title
     glutInitWindowSize(400, 400);          // Set the window's initial width & height
-    // glutInitWindowPosition(160, 160);      // Position the window's initial top-left corner
+    glutInitWindowPosition(160, 160);      // Position the window's initial top-left corner
     glutDisplayFunc(display); // Register display callback handler for window re-paint
 
     glutKeyboardFunc(keyboard); // Register keyboard callback
