@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 2.8.11)
 
-project(simpleFluid)
+project(Fluid-ArrayBased)
 
-add_executable(simpleFluid ${SRC} "main.cpp")
+add_executable(Fluid-ArrayBased ${SRC} "main.cpp")
 add_executable(unitTest ${SRC} "unitTest.cpp")
 
 
@@ -11,7 +11,7 @@ find_package(OpenGL)
 find_package(GLUT)
 include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS})
 
-target_link_libraries(simpleFluid
+target_link_libraries(Fluid-ArrayBased
     PRIVATE
     ${OPENGL_gl_LIBRARY}
     ${OPENGL_glu_LIBRARY}

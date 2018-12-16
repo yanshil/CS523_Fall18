@@ -86,6 +86,11 @@ class FluidQuantity
         double x1 = linp(at(ix, iy + 1), at(ix + 1, iy + 1), x);
         double re = linp(x0, x1, y);
 
+        // if (oy < 0.0001) {
+        //     printf("x0 = %0.3f, x1 = %0.3f\n", x0, x1);
+        // printf("at(%d, %d) = %f, Next_0: at(%d, %d) = %f\n", ix, iy, at(ix, iy),ix+1, iy, at(ix+1, iy));
+        // }
+
         return re;
     }
 
@@ -111,6 +116,7 @@ class FluidQuantity
                 y -= velocity_v * timestep;
 
                 _Phi_new[idx] = linp(x, y);
+                // printf("ox=%0.2f, oy = %0.2f, v = (%0.3f, %0.3f), linp(%f, %f) = %f\n", ox, oy,velocity_u, velocity_v, x, y, _Phi_new[idx]);
             }
         }
     }
@@ -121,7 +127,7 @@ class FluidQuantity
         if (fabs(_Phi[iy * m + ix]) < fabs(value))
         {
             _Phi[iy * m + ix] = value;
-            printf("Add Inflow at (%d, %d)\n", ix, iy);
+            //printf("Add Inflow at (%d, %d)\n", ix, iy);
         }
     }
 
@@ -138,6 +144,24 @@ class FluidQuantity
     //             if (fabs(_Phi[x + y * m]) < fabs(v))
     //                 _Phi[x + y * m] = v;
     // }
+
+    void printArray()
+    {
+        printf("=========================: m = %d, size = %d\n", m, m * n);
+        for (int i = 0; i < m * n; i++)
+        {
+            printf("%.1f", _Phi[i]);
+
+            if ((i + 1) % m == 0)
+            {
+                printf("\n");
+            }
+            else
+            {
+                printf(",");
+            }
+        }
+    }
 };
 
 class FluidSolver
@@ -519,9 +543,9 @@ class FluidSolver
     {
         // Projection
         calculateRHS();
-        calculateA(timestep);
-        project_CG(1000);
-        // project_GS(1000, timestep);
+        //calculateA(timestep);
+        //project_CG(1000);
+        project_GS(1000, timestep);
         applyPressure(timestep);
 
         //Advection
@@ -541,6 +565,7 @@ class FluidSolver
             for (int x = max(ix0, 0); x < min(ix1, m); x++)
             {
                 int idx = y * m + x;
+                //printf("idx = %d\n", idx);
                 if (axis == -1)
                     _d->addInflow(x, y, value);
                 if (axis == 0)
@@ -564,36 +589,23 @@ class FluidSolver
         return max(min(1.0 - _d->Phi()[idx], 1.0), 0.0);
     }
 
-    void printArray(double *src)
-    {
-        for (int i = 0; i < m * n; i++)
-        {
-            printf("%.3f", src[i]);
-
-            if ((i + 1) % m == 0)
-            {
-                printf("\n");
-            }
-            else
-            {
-                printf(",");
-            }
-        }
-    }
-
     //===========================================================
 
     // Projection output as a tent-like plot
     void test_projection_tent(double timestep)
     {
         // Projection
-        calculateRHS();
-        calculateA(timestep);
+        // calculateRHS();
+        memset(_rhs, 0, m * n * sizeof(double));
+        _rhs[7740] = 1;
+        // calculateA(timestep);
         // calculatePreconditioner();
-        // project_GS(1000, timestep, false);
-        project_CG(1000, false);
+        project_GS(1000, timestep, false);
+        // project_CG(1000, false);
         applyPressure(timestep);
 
-        printArray(_p);
+        _u->printArray();
+        _v->printArray();
+
     }
 };
