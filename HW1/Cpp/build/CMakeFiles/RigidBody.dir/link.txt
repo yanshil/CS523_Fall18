@@ -1,0 +1,2 @@
+/usr/bin/ar qc libRigidBody.a  CMakeFiles/RigidBody.dir/RigidBody.cpp.o
+/usr/bin/ranlib libRigidBody.a

@@ -2,7 +2,8 @@
 
 using namespace rigidbody;
 
-RigidBody::RigidBody() {
+RigidBody::RigidBody()
+{
 	x << 0, 0, 0;
 	v << 0, 0, 0;
 	omega << 0, 0, 0;
@@ -20,15 +21,16 @@ RigidBody::RigidBody() {
 
 	Ibody = Matrix3d::Zero();
 
-}	// End constuctor
+} // End constuctor
 
-RigidBody::~RigidBody() {
+RigidBody::~RigidBody()
+{
 	delete[] vertices;
 	cout << "Called Destructor" << endl;
-
 }
 
-void RigidBody::initialize() {
+void RigidBody::initialize()
+{
 	v << 0, 1, 10;
 	omega << 0.05, 0.02, 0.01;
 
@@ -48,7 +50,8 @@ void RigidBody::initialize() {
 	L = I * omega;
 }
 
-void RigidBody::update(double h) {
+void RigidBody::update(double h)
+{
 	static int frame = 0;
 	frame++;
 
@@ -77,7 +80,7 @@ void RigidBody::update(double h) {
 	I = R * Ibody * R.transpose();
 
 	// Update Torque
-	torque << 0,0,0;
+	torque << 0, 0, 0;
 	for (int i = 0; i < particleNum; i++)
 	{
 		torque += vertices[i].ri.cross(vertices[i].fi);
@@ -85,7 +88,8 @@ void RigidBody::update(double h) {
 	L += torque * h;
 	omega = I.inverse() * L;
 
-    std::cout<<"omega="<<omega<<std::endl;
+	std::cout << "omega=" << omega << std::endl;
+	std::cout << "x=" << x << std::endl;
 
 	// Update ri!
 	for (int j = 0; j < particleNum; j++)
@@ -106,25 +110,37 @@ void RigidBody::modelCube()
 		vertices[i].fi << 0, 0, -9.8 * vertices[i].mi;
 	}
 
+	double x0 = 0, y0 = 0, z0 = 0;
+	double w = 3, h = 1, d = 5;
+
 	// TODO: Improve locality!
-	vertices[0].ri << -1, -1, 1;
-	vertices[1].ri <<  -1, -1, -1;
-	vertices[2].ri << -1, 1, -1;
-	vertices[3].ri << -1, 1, 1;
-	vertices[4].ri << 1, -1, 1;
-	vertices[5].ri << 1, -1, -1;
-	vertices[6].ri << 1, 1, -1;
-	vertices[7].ri <<  1, 1, 1;
+	vertices[0].ri << x0 - w / 2.0, y0 - h / 2.0, z0 + d / 2.0;
+	vertices[1].ri << x0 - w / 2.0, y0 - h / 2.0, z0 - d / 2.0;
+	vertices[2].ri << x0 - w / 2.0, y0 + h / 2.0, z0 - d / 2.0;
+	vertices[3].ri << x0 - w / 2.0, y0 + h / 2.0, z0 + d / 2.0;
+	vertices[4].ri << x0 + w / 2.0, y0 - h / 2.0, z0 + d / 2.0;
+	vertices[5].ri << x0 + w / 2.0, y0 - h / 2.0, z0 - d / 2.0;
+	vertices[6].ri << x0 + w / 2.0, y0 + h / 2.0, z0 - d / 2.0;
+	vertices[7].ri << x0 + w / 2.0, y0 + h / 2.0, z0 + d / 2.0;
 
-	// TODO: Copy value to r0 rather than duplicate initialize?
-	// Reduce redundancy!
-	vertices[0].r0 << -1, -1, 1;
-	vertices[1].r0 <<  -1, -1, -1;
-	vertices[2].r0 << -1, 1, -1;
-	vertices[3].r0 << -1, 1, 1;
-	vertices[4].r0 << 1, -1, 1;
-	vertices[5].r0 << 1, -1, -1;
-	vertices[6].r0 << 1, 1, -1;
-	vertices[7].r0 <<  1, 1, 1;
 
+	vertices[0].r0 << x0 - w / 2.0, y0 - h / 2.0, z0 + d / 2.0;
+	vertices[1].r0 << x0 - w / 2.0, y0 - h / 2.0, z0 - d / 2.0;
+	vertices[2].r0 << x0 - w / 2.0, y0 + h / 2.0, z0 - d / 2.0;
+	vertices[3].r0 << x0 - w / 2.0, y0 + h / 2.0, z0 + d / 2.0;
+	vertices[4].r0 << x0 + w / 2.0, y0 - h / 2.0, z0 + d / 2.0;
+	vertices[5].r0 << x0 + w / 2.0, y0 - h / 2.0, z0 - d / 2.0;
+	vertices[6].r0 << x0 + w / 2.0, y0 + h / 2.0, z0 - d / 2.0;
+	vertices[7].r0 << x0 + w / 2.0, y0 + h / 2.0, z0 + d / 2.0;
+
+	// // TODO: Copy value to r0 rather than duplicate initialize?
+	// // Reduce redundancy!
+	// vertices[0].r0 << -1, -1, 1;
+	// vertices[1].r0 << -1, -1, -1;
+	// vertices[2].r0 << -1, 1, -1;
+	// vertices[3].r0 << -1, 1, 1;
+	// vertices[4].r0 << 1, -1, 1;
+	// vertices[5].r0 << 1, -1, -1;
+	// vertices[6].r0 << 1, 1, -1;
+	// vertices[7].r0 << 1, 1, 1;
 }

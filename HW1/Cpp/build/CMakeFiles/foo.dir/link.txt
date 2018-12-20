@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/foo.dir/main.cpp.o  -o foo libRigidBody.a -lGL -lGLU -lglut -lXi 
