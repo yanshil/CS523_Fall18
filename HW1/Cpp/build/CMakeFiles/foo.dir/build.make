@@ -80,6 +80,7 @@ foo_EXTERNAL_OBJECTS =
 foo: CMakeFiles/foo.dir/main.cpp.o
 foo: CMakeFiles/foo.dir/build.make
 foo: libRigidBody.a
+foo: libimgui.a
 foo: /usr/lib/x86_64-linux-gnu/libGL.so
 foo: /usr/lib/x86_64-linux-gnu/libGLU.so
 foo: /usr/lib/x86_64-linux-gnu/libglut.so

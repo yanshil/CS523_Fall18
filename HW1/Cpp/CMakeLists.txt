@@ -25,14 +25,12 @@ target_link_libraries(${PROJECT_NAME} RigidBody)
 ############################################################
 
 ### Eigen:
+include_directories(include)
 
-#find_package (Eigen3 3.3 NO_MODULE) 
-#if (TARGET Eigen3::Eigen)
-    # Use the imported target
-    include_directories(include)
-#    include_directories(${CMAKE_SOURCE_DIR})
-# endif (TARGET Eigen3::Eigen)
-
+### imgui
+include_directories(imgui)
+add_library(imgui ./imgui/imgui.cpp ./imgui/imgui_demo.cpp ./imgui/imgui_draw.cpp ./imgui/imgui_widgets.cpp ./imgui/example-glut/imgui_impl_freeglut.cpp ./imgui/example-glut/imgui_impl_opengl2.cpp)
+target_link_libraries(${PROJECT_NAME} imgui)
 
 ## Build-in Libraries
 find_package(OpenGL)

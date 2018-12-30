@@ -11,11 +11,13 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../include"
+  "../imgui"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
   "/home/yanshi/Workspace/CS523/HW1/Cpp/build/CMakeFiles/RigidBody.dir/DependInfo.cmake"
+  "/home/yanshi/Workspace/CS523/HW1/Cpp/build/CMakeFiles/imgui.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

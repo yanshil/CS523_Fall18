@@ -6,6 +6,30 @@
 
 #IncludeRegexTransform: 
 
+../imgui/example-glut/imgui_impl_freeglut.h
+
+../imgui/example-glut/imgui_impl_opengl2.h
+
+../imgui/imconfig.h
+
+../imgui/imgui.h
+imconfig.h
+../imgui/imconfig.h
+float.h
+-
+stdarg.h
+-
+stddef.h
+-
+string.h
+-
+assert.h
+-
+stdint.h
+-
+imgui_user.h
+../imgui/imgui_user.h
+
 ../include/Eigen/Cholesky
 Core
 ../include/Eigen/Core
@@ -953,4 +977,10 @@ GL/glut.h
 -
 RigidBody.h
 /home/yanshi/Workspace/CS523/HW1/Cpp/RigidBody.h
+imgui.h
+/home/yanshi/Workspace/CS523/HW1/Cpp/imgui.h
+example-glut/imgui_impl_freeglut.h
+/home/yanshi/Workspace/CS523/HW1/Cpp/example-glut/imgui_impl_freeglut.h
+example-glut/imgui_impl_opengl2.h
+/home/yanshi/Workspace/CS523/HW1/Cpp/example-glut/imgui_impl_opengl2.h
 

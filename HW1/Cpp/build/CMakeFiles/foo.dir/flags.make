@@ -6,5 +6,5 @@ CXX_FLAGS =   -std=gnu++11
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/yanshi/Workspace/CS523/HW1/Cpp/include 
+CXX_INCLUDES = -I/home/yanshi/Workspace/CS523/HW1/Cpp/include -I/home/yanshi/Workspace/CS523/HW1/Cpp/imgui 
 
